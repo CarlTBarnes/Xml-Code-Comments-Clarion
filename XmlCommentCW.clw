@@ -90,7 +90,7 @@ Window WINDOW('<<Xml> Code Comment Generate from Prototype for Clarion'),AT(,,43
                 PROMPT('ProcedureName  PROCEDURE( ... parameters ...),Return'),AT(46,21),USE(?Prototype2),FONT('Consolas')
                 BUTTON('Test...'),AT(397,19,26,10),USE(?TestBtn),SKIP,FONT(,8),TIP('Pick Test prototype from popup'),FLAT
                 CHECK('<<Summary>'),AT(188,66),USE(Cfg:xSummaryChk),TRN
-                TEXT,AT(8,31,414,30),USE(ProtoCode),VSCROLL,FONT('Consolas'),DROPID('~TEXT'),ALRT(CtrlQ)
+                TEXT,AT(9,31,414,30),USE(ProtoCode),VSCROLL,FONT('Consolas'),DROPID('~TEXT'),ALRT(CtrlQ)
                 BUTTON('Paste'),AT(9,67,34,21),USE(?PasteBtn),SKIP,TIP('Paste clipboard into above Procedure Prototype e' & |
                         'ntry and Generate')
                 BUTTON('!!! &XML Generate'),AT(49,67,41,21),USE(?XmlBtn),SKIP,TIP('Parse Procedure above and generate !!' & |
@@ -111,7 +111,7 @@ Window WINDOW('<<Xml> Code Comment Generate from Prototype for Clarion'),AT(,,43
                 ENTRY(@s64),AT(9,94,183,10),USE(Prot:Name),SKIP,TIP('Prot:Name'),READONLY
                 ENTRY(@s255),AT(207,94,205,10),USE(Prot:RV:Source),SKIP,TIP('Prot:RV:Source'),READONLY
                 TEXT,AT(9,110,413,29),USE(Prot:Parms),SKIP,VSCROLL,FONT('Consolas'),TIP('Prot:Parms')
-                TEXT,AT(8,145),FULL,USE(CallTxt),SKIP,HVSCROLL,FONT('Consolas',10)
+                TEXT,AT(9,145),FULL,USE(CallTxt),SKIP,HVSCROLL,FONT('Consolas',10)
             END
             TAB(' Parms List '),USE(?TAB2)
                 STRING('Parameters parsed into a List for debug'),AT(8,20),USE(?LIST:ParmsQ:FYI)
