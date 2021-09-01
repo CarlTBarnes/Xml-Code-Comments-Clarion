@@ -27,4 +27,4 @@ Below is a screen capture of an .INC file with single line !!! XML \<Summary> an
 
 ![capture](readme2.png)
 
-Shown during the [ClarionLive Open Webinar August 18, 2021 at time 1:20:40](https://www.youtube.com/watch?v=0hTku3FA1Sg&t=01h20m40s)
+Shown during the [ClarionLive Open Webinar August 18, 2021 at time 1:20:50](https://www.youtube.com/watch?v=0hTku3FA1Sg&t=01h20m50s)
