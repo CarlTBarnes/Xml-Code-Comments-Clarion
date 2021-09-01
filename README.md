@@ -28,3 +28,5 @@ Below is a screen capture of an .INC file with single line !!! XML \<Summary> an
 ![capture](readme2.png)
 
 Shown during the [ClarionLive Open Webinar August 18, 2021 at time 1:20:50](https://www.youtube.com/watch?v=0hTku3FA1Sg&t=01h20m50s)
+
+XML comments can also be generated from the prototype using Classify-It from https://ohnosoft.com/index.php/classify-it/
