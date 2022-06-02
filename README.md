@@ -1,6 +1,8 @@
 # Xml-Code-Comments-Clarion
 
 Paste in a Procedure Prototype and Generate XML Code Comments in the Clarion format.
+ This parses the prototype to provide a framework of the comment XML elements for you to fill in the details that will help the developer using the Procedure.
+ The generated text contains all the labels and data types.
 
 ![capture](readme.png)
 
