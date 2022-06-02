@@ -9,7 +9,7 @@
 !If you put the <Xml> in the .CLW file the intellisense only appears in THAT CLW.
 ! 
 !Putting several !!! <Xml> lines before each Procedure in the INC file can make
-!it long and hard to scan quickly. One option is to put single line with just
+!the INC long and hard to scan quickly. One option is to put single line with just
 !the <Summary> and <Returns> so you leave out the <param>'s.  
 !
 !Example of this in https://github.com/CarlTBarnes/FindCleanCwIDE/blob/main/CbFindCleanCls.inc
@@ -17,10 +17,20 @@
   !PatternsQ2String    PROCEDURE(PatternQType PatQ, *LONG OutLength),*STRING
 
 !-------------------------------------------------------------------------------
-  PROGRAM
-    INCLUDE 'KeyCodes.CLW'
-!   INCLUDE('CbWndPreview.inc'),ONCE   !Available at GitHub CarlTBarnes
+! History
+! 29-May-2022 Fix bugs with no parameters "PROCEDURE()", "PROCEDURE,ReturnType" and "PROCEDURE"
+!             Adjust Window to work with Manifest
+!-------------------------------------------------------------------------------
 
+  PROGRAM
+    INCLUDE('KeyCodes.CLW')
+
+_CbWndPreview_  EQUATE(0)               !To build in change to (1) and UnComment below Include. Puts Secret Button on window top
+!    INCLUDE('CbWndPreview.inc'),ONCE   !https://github.com/CarlTBarnes/WindowPreview
+    COMPILE('!***',_CbWndPreview_)
+WndPrvCls CBWndPreviewClass
+             !***
+    
   MAP
 XmlCommentCW        PROCEDURE() 
 ClarionDataType     PROCEDURE(STRING InType,<*STRING OutEntityBug>),BYTE  !1=Type 2=Entity *implied
@@ -48,6 +58,7 @@ xRemarksXtra     BYTE(0)            !  Xtra Lines
 OmitBang3        BYTE(0)  !No !!! just <Xml> so can validate ? Allow \\\ for C#
 AlignParmGT      BYTE(1)  !For <param align ">"
 UpperTypes       BYTE(0)
+DashLineBefore   BYTE(0)  !05/29/22 way to add !---- to generated
             END 
 
 XMLcc     ANY
@@ -85,27 +96,27 @@ IncFileTxt  STRING(32000)
 Window WINDOW('<<Xml> Code Comment Generate from Prototype for Clarion'),AT(,,430,250),GRAY,SYSTEM,ICON('XmlComGn.ICO'), |
             FONT('Segoe UI',9),RESIZE
         SHEET,AT(3,4),FULL,USE(?SHEET1)
-            TAB(' Input '),USE(?TAB1)
-                PROMPT('Prototype:'),AT(9,21),USE(?Prototype1)
+            TAB(' &Input '),USE(?TAB1)
+                PROMPT('&Prototype:'),AT(9,21),USE(?Prototype1)
                 PROMPT('ProcedureName  PROCEDURE( ... parameters ...),Return'),AT(46,21),USE(?Prototype2),FONT('Consolas')
                 BUTTON('Test...'),AT(397,19,26,10),USE(?TestBtn),SKIP,FONT(,8),TIP('Pick Test prototype from popup'),FLAT
-                CHECK('<<Summary>'),AT(188,66),USE(Cfg:xSummaryChk),TRN
                 TEXT,AT(9,31,414,30),USE(ProtoCode),VSCROLL,FONT('Consolas'),DROPID('~TEXT'),ALRT(CtrlQ)
-                BUTTON('Paste'),AT(9,67,34,21),USE(?PasteBtn),SKIP,TIP('Paste clipboard into above Procedure Prototype e' & |
+                BUTTON('Past&e'),AT(9,67,34,21),USE(?PasteBtn),SKIP,TIP('Paste clipboard into above Procedure Prototype e' & |
                         'ntry and Generate')
                 BUTTON('!!! &XML Generate'),AT(49,67,41,21),USE(?XmlBtn),SKIP,TIP('Parse Procedure above and generate !!' & |
                         '! XML comments')
                 BUTTON('&Copy<13,10>XML'),AT(96,67,41,21),USE(?CopyBtn),SKIP,TIP('Copy Generated XML at bottom')
                 BUTTON('Parse<13,10>Test'),AT(150,67,30,21),USE(?ParseBtn),SKIP,FONT(,8),TIP('Carl wants to just test Parse')
-                CHECK('<<Summary>'),AT(188,66),USE(Cfg:xSummaryChk,, ?Cfg:xSummaryChk:2),TRN
-                SPIN(@n1),AT(241,66,25,10),USE(Cfg:xSummaryXtra),HVSCROLL,TIP('Extra Lines')
-                CHECK('<<Returns>'),AT(279,66),USE(Cfg:xReturnsChk),TRN
-                SPIN(@n1),AT(327,66,25,10),USE(Cfg:xReturnsXtra),HVSCROLL,TIP('Extra Lines')
-                CHECK('<<Remarks>'),AT(188,78),USE(Cfg:xRemarksChk),TRN
-                SPIN(@n1),AT(241,78,25,10),USE(Cfg:xRemarksXtra),HVSCROLL,TIP('Extra Lines')
-                CHECK('Align ">"'),AT(279,78),USE(Cfg:AlignParmGT),TRN,TIP('Align closing ">" on Parms')
-                CHECK('No !!!'),AT(326,78),USE(Cfg:OmitBang3),TRN,TIP('Omit !!! prefix so just XML is output')
-                CHECK('UPR Types'),AT(365,78),USE(Cfg:UpperTypes),TRN,TIP('Standard Clarion Types are UPPER<13,10,13,10>' & |
+                CHECK('<<Summary>'),AT(188,66),USE(Cfg:xSummaryChk),TRN
+                SPIN(@n1),AT(243,66,25,10),USE(Cfg:xSummaryXtra),HVSCROLL,TIP('Summary Extra Lines'),RANGE(0,9)
+                CHECK('<<Returns>'),AT(280,66),USE(Cfg:xReturnsChk),TRN
+                SPIN(@n1),AT(329,66,25,10),USE(Cfg:xReturnsXtra),HVSCROLL,TIP('Returns Extra Lines'),RANGE(0,9)
+                CHECK('<<Remarks>'),AT(188,79),USE(Cfg:xRemarksChk),TRN
+                SPIN(@n1),AT(243,79,25,10),USE(Cfg:xRemarksXtra),HVSCROLL,TIP('Remarks Extra Lines'),RANGE(0,9)
+                CHECK('Align ">"'),AT(280,79),USE(Cfg:AlignParmGT),TRN,TIP('Align closing ">" on Parms')
+                CHECK('No !!!'),AT(328,79),USE(Cfg:OmitBang3),TRN,TIP('Omit !!! prefix so just XML is output')
+                CHECK('! -----'),AT(365,66),USE(Cfg:DashLineBefore),TRN,TIP('Dashed line before Summary')
+                CHECK('UPR Types'),AT(365,79),USE(Cfg:UpperTypes),TRN,TIP('Standard Clarion Types are UPPER<13,10,13,10>' & |
                         'Check box to Upper ALL Types e.g. STRINGTHEORY<13,10,13,10>Easier to read in Intellisense.<13>' & |
                         '<10>Requires Parsing again ')
                 ENTRY(@s64),AT(9,94,183,10),USE(Prot:Name),SKIP,TIP('Prot:Name'),READONLY
@@ -113,27 +124,27 @@ Window WINDOW('<<Xml> Code Comment Generate from Prototype for Clarion'),AT(,,43
                 TEXT,AT(9,110,413,29),USE(Prot:Parms),SKIP,VSCROLL,FONT('Consolas'),TIP('Prot:Parms')
                 TEXT,AT(9,145),FULL,USE(CallTxt),SKIP,HVSCROLL,FONT('Consolas',10)
             END
-            TAB(' Parms List '),USE(?TAB2)
-                STRING('Parameters parsed into a List for debug'),AT(8,20),USE(?LIST:ParmsQ:FYI)
+            TAB(' Par&ms List '),USE(?TAB2)
+                STRING('Parameters parsed into a List for debug'),AT(8,21),USE(?LIST:ParmsQ:FYI)
                 LIST,AT(8,34),FULL,USE(?LIST:ParmsQ),VSCROLL,FROM(ParmsQ),FORMAT('21C|M~Omit~L(2)@n1b@23C|M~Const~L(2)@n' & |
                         '1b@80L(2)|M~Type~@s32@80L(2)|M~Label~@s32@80L(2)|M~Default~@s32@20L(2)|M~Source~@s128@')
             END
-            TAB(' Return List '),USE(?TAB3)
+            TAB(' &Return List '),USE(?TAB3)
                 PROMPT('RV Source:'),AT(10,23),USE(?PROMPT:Rv1)
                 ENTRY(@s255),AT(47,22,205,10),USE(Prot:RV:Source,, ?Prot:RV:Source:2),SKIP,READONLY
                 PROMPT('RV Type:'),AT(10,36),USE(?PROMPT:RV2)
                 ENTRY(@s64),AT(47,35,205,10),USE(Prot:RV:Type),SKIP
                 PROMPT('RV Other:'),AT(10,49),USE(?PROMPT:RV3)
                 ENTRY(@s255),AT(47,48,205,10),USE(Prot:RV:Other),SKIP
-                PROMPT('Return type and attributes <13,10>parsed into a List for debug'),AT(281,29,111,24),USE(?LIST:ReturnQ:FYI) |
-                        
+                PROMPT('Return type and attributes <13,10>parsed into a List for debug'),AT(281,29,111,24),USE(?LIST:ReturnQ:FYI)                        
                 LIST,AT(8,68),FULL,USE(?LIST:ReturnQ),VSCROLL,FROM(ReturnQ),FORMAT('90L(2)|M~Type~@s32@20L(2)~Source~@s128@')
             END
-            TAB(' INC File '),USE(?TAB:IncFile)
+            TAB(' INC &File '),USE(?TAB:IncFile)
                 PROMPT('Paste .INC File  Source here to Copy / Paste into Input tab'),AT(10,21),USE(?PROMPT:IncFileTxt)
                 TEXT,AT(9,33),FULL,USE(IncFileTxt),HVSCROLL,FONT('Consolas',10)
             END
         END
+        BUTTON('Run Another'),AT(376,3,50,10),USE(?RunAgainBtn),SKIP,FONT(,8),TIP('Run another instance')
     END
 
 DOO     CLASS
@@ -143,15 +154,21 @@ ReturnValueParse    PROCEDURE()
 XmlGenerate         PROCEDURE()
 XmlGenElement       PROCEDURE(STRING ElementOpen, STRING ElementClose, BYTE pXtraLines, STRING pContent)
         END   
-!WndPrvCls   CBWndPreviewClass
     CODE
     OPEN(Window)
     ?SHEET1{PROP:TabSheetStyle}=2  
+    ?SHEET1{PROP:NoTheme}=1         !Incase Manifest adds Visual Stylesmakes sheet look better
+    ?LIST:ParmsQ{PROP:NoTheme}=1    !Incase Manifest
+    ?LIST:ReturnQ{PROP:NoTheme}=1   !Incase Manifest
     SYSTEM{PROP:PropVScroll}=1  
     SYSTEM{PROP:MsgModeDefault}=MSGMODE:CANCOPY
-!    WndPrvCls.Init(1)
+    0{PROP:MinWidth} = 0{PROP:Width} * .50 ; 0{PROP:MinHeight} = 0{PROP:Height} * .70
+    COMPILE('!***',_CbWndPreview_)
+        WndPrvCls.Init(2)           !Add Carl's Window Preview Class to allow runtime window design
+             !***
     ACCEPT
         CASE EVENT()
+        OF EVENT:OpenWindow ; SELECT(?ProtoCode)
         OF EVENT:Drop ; ProtoCode=DropID() ; DISPLAY 
         OF EVENT:AlertKey
            CASE KEYCODE()
@@ -165,6 +182,7 @@ XmlGenElement       PROCEDURE(STRING ElementOpen, STRING ElementClose, BYTE pXtr
         OF ?ParseBtn ; DOO.ProtoParse() ; DISPLAY 
         OF ?XmlBtn   ; DOO.ProtoParse() ; DOO.XmlGenerate() ; DISPLAY 
         OF ?CopyBtn  ; SetCLIPBOARD(CallTxt)
+        OF ?RunAgainBtn ; RUN(COMMAND('0'))
         END
     END
  
@@ -187,10 +205,14 @@ PadLabel    PSTRING(128)
     CODE
     XMLcc='' 
     Bang3=CHOOSE(~Cfg:OmitBang3,'!!! ','')
-   
+
+    IF Cfg:DashLineBefore THEN  ! --- Dashed Line -------------------------------------------------
+       XMLcc='! -{78}<13,10>'   !Must be !--- not !!!--- or it will generate into Intellisense without CRLF so messedup
+    END                         !Could do !!! <!-- ----- --> still in Intellisense but looks better 
+
     !---- <summary>  </summary> --------------------------------------- <summary>
     IF Cfg:xSummaryChk THEN
-       DOO.XmlGenElement(xSummary1,xSummary2,Cfg:xSummaryXtra, CLIP(Prot:Name) & ALL(' ',10))
+       DOO.XmlGenElement(xSummary1,xSummary2,Cfg:xSummaryXtra, CLIP(Prot:Name) &'() {10}')
     END
 
     !---- Parameters:  <param name="Variable"> Description </param> --------------     
@@ -250,8 +272,9 @@ LNo USHORT
 !---------------------------- 
 DOO.ProtoParse PROCEDURE()
 X       USHORT
-P1      USHORT
-P2      USHORT
+P1      USHORT      !1st (
+P2      USHORT      !1st )
+Cma1    USHORT      !Comma 1 after PROCEDURE
 Source  STRING(1000)
 Parms   STRING(1000)
 LenP    USHORT 
@@ -269,26 +292,33 @@ B1      USHORT
     END
     Prot:Parms = 'Failed'
     Source = ProtoCode
-    P1=INSTRING('(',Source)
-    P2=INSTRING(')',Source,1,P1)
-    IF ~P1 OR ~P2 OR P2<=P1+1 THEN
+    P1=INSTRING('(',Source)                     !Find "(" in  "Name PROCEDURE()"
+    P2=INSTRING(')',Source,1,P1)                !Find ")" in  "Name PROCEDURE()"
+    Cma1=INSTRING(',',Source)                   !Find "," in  "Name PROCEDURE,ReturnValue"
+    IF P1=0 AND P2=0 AND Cma1<>0 THEN           !No (Parens), but a Comma assume "Name PROCEDURE,ReturnValue"
+       P1=Cma1                                  !Set "(" pos = Comma pos ... also ")" pos
+       P2=Cma1                                  
+    ELSIF P1=0 AND P2=0 THEN                    !No (Parens) and No Comma assume "Name PROCEDURE" w/o () or ,Return
+       P1=LEN(CLIP(Source))+1                   !Set "(" pos = Length + 1 ... also ")" pos
+       P2=P1
+    ELSIF ~P1 OR ~P2 OR P2<P1+1 THEN            !Bad Paren Positions like )(   05/29/22 allow ()
         Prot:Parms = 'Failed: (Parens) ' & |
                       CHOOSE(~P1,', No (','') & CHOOSE(P1 AND ~P2,', No )','') & |
                       CHOOSE(P1 AND P2 AND P2<=P1+1,', ) <= (','')
                                 
         RETURN
     END 
-    X=INSTRING(' ',SUB(Source,1,P1-1))  
+    X=INSTRING(' ',SUB(Source,1,P1-1))      !Find space between "LABEL Procedure("  P1=First (
     IF ~X THEN 
         Prot:Parms = 'Failed: No Prototype Name Space' ; RETURN  
     END
-!    Message('P1=' & P1 &'  P2=' & P2 & |
+!    Message('P1=' & P1 &'  P2=' & P2 & '  Cma1=' & Cma1 & |
 !            '||RV="' & clip(SUB(Source,P2+1,99)) &'"'& |
 !            '||Src:|' & CLIP(Source) ,'ProtoParseRtn')
 !   Name  Procedure (parms),Return
-    Prot:Name  = SUB(Source,1,X)
-    Prot:Parms = Source[P1+1 : P2-1]
-    Prot:RV:Source    = LEFT(SUB(Source,P2+1,999))
+    Prot:Name  = SUB(Source,1,X)                                    !take LABEL in "LABEL Procedure
+    Prot:Parms = CHOOSE(P1+1>=P2 OR P2=0,'', Source[P1+1 : P2-1])   !take between "()" the (parms)
+    Prot:RV:Source    = LEFT(SUB(Source,P2+1,999))                  !take after ")" the ",Return", may be "Return" if no ()
     IF Prot:RV:Source[1]=',' THEN Prot:RV:Source = LEFT(SUB(Prot:RV:Source,2,999)) . 
     
     !Prototype:   [CONST] Type [ LABEL ]
@@ -297,25 +327,27 @@ B1      USHORT
     !Prototype: Type[] [ Label ]                Array[] has Parens
 
     Prot:LongLabel = 0
-    B1=1       
-    Parms = Prot:Parms
-    LenP=LEN(CLIP(Parms))
-    LOOP X=1 TO LenP + 1
-         IF X > LenP OR (~InBrackets AND Parms[X]=',') THEN
-            CLEAR(ParmsQ)
-            PrmQ:Source=LEFT(SUB(Parms,B1,X-B1))
-            DOO.OneParmQParse()
-            ADD(ParmsQ) 
-            B1=X+1
-            IF X > LenP THEN BREAK.
-         END 
-         IF Parms[X]='[' THEN    !Array Type[]
-            InBrackets=1
-            CYCLE
-         ELSIF InBrackets THEN
-            IF Parms[X]=']' THEN InBrackets=0.
-            CYCLE 
-         END        
+    IF Prot:Parms THEN
+       B1=1       
+       Parms = Prot:Parms
+       LenP=LEN(CLIP(Parms))
+       LOOP X=1 TO LenP + 1
+            IF X > LenP OR (~InBrackets AND Parms[X]=',') THEN
+               CLEAR(ParmsQ)
+               PrmQ:Source=LEFT(SUB(Parms,B1,X-B1))
+               DOO.OneParmQParse()
+               ADD(ParmsQ) 
+               B1=X+1
+               IF X > LenP THEN BREAK.
+            END 
+            IF Parms[X]='[' THEN    !Array Type[]
+               InBrackets=1
+               CYCLE
+            ELSIF InBrackets THEN
+               IF Parms[X]=']' THEN InBrackets=0.
+               CYCLE 
+            END        
+       END 
     END 
     IF Prot:RV:Source THEN DOO.ReturnValueParse().
     RETURN 
