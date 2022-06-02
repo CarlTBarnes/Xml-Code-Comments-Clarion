@@ -19,7 +19,9 @@
 !-------------------------------------------------------------------------------
 ! History
 ! 29-May-2022 Fix bugs with no parameters "PROCEDURE()", "PROCEDURE,ReturnType" and "PROCEDURE"
-!             Adjust Window to work with Manifest
+!             Adjust Window to work with Manifest   
+! 02-Jun-2022 Option to Number <Param > #. to help some with commas on omitted e.g. ST.Replace has 9 (ParamNumbered) 
+!             Cosmetic changes to window for a more logical layout and grouping
 !-------------------------------------------------------------------------------
 
   PROGRAM
@@ -59,6 +61,7 @@ OmitBang3        BYTE(0)  !No !!! just <Xml> so can validate ? Allow \\\ for C#
 AlignParmGT      BYTE(1)  !For <param align ">"
 UpperTypes       BYTE(0)
 DashLineBefore   BYTE(0)  !05/29/22 way to add !---- to generated
+ParamNumbered   BYTE(1)  !06/02/22 <param ...> 1. 2. 
             END 
 
 XMLcc     ANY
@@ -93,41 +96,54 @@ Source      STRING(64)      !RetQ:Source
 IncFileTxt  STRING(32000)
 !EndRegion Data Declarations
         
-Window WINDOW('<<Xml> Code Comment Generate from Prototype for Clarion'),AT(,,430,250),GRAY,SYSTEM,ICON('XmlComGn.ICO'), |
-            FONT('Segoe UI',9),RESIZE
+Window WINDOW('<<Xml> Code Comment Generate from Prototype for Clarion'),AT(,,430,250),GRAY,SYSTEM, |
+            ICON('XmlComGn.ICO'),FONT('Segoe UI',9),RESIZE
         SHEET,AT(3,4),FULL,USE(?SHEET1)
             TAB(' &Input '),USE(?TAB1)
                 PROMPT('&Prototype:'),AT(9,21),USE(?Prototype1)
-                PROMPT('ProcedureName  PROCEDURE( ... parameters ...),Return'),AT(46,21),USE(?Prototype2),FONT('Consolas')
-                BUTTON('Test...'),AT(397,19,26,10),USE(?TestBtn),SKIP,FONT(,8),TIP('Pick Test prototype from popup'),FLAT
+                PROMPT('ProcedureName  PROCEDURE(...parameters...),Return'),AT(46,21),USE(?Prototype2), |
+                        FONT('Consolas')
+                BUTTON('Test Data...'),AT(384,19,41,10),USE(?TestBtn),SKIP,FONT(,8),TIP('Pick Test P' & |
+                        'rototype from Popup'),FLAT
                 TEXT,AT(9,31,414,30),USE(ProtoCode),VSCROLL,FONT('Consolas'),DROPID('~TEXT'),ALRT(CtrlQ)
-                BUTTON('Past&e'),AT(9,67,34,21),USE(?PasteBtn),SKIP,TIP('Paste clipboard into above Procedure Prototype e' & |
-                        'ntry and Generate')
-                BUTTON('!!! &XML Generate'),AT(49,67,41,21),USE(?XmlBtn),SKIP,TIP('Parse Procedure above and generate !!' & |
-                        '! XML comments')
-                BUTTON('&Copy<13,10>XML'),AT(96,67,41,21),USE(?CopyBtn),SKIP,TIP('Copy Generated XML at bottom')
-                BUTTON('Parse<13,10>Test'),AT(150,67,30,21),USE(?ParseBtn),SKIP,FONT(,8),TIP('Carl wants to just test Parse')
-                CHECK('<<Summary>'),AT(188,66),USE(Cfg:xSummaryChk),TRN
-                SPIN(@n1),AT(243,66,25,10),USE(Cfg:xSummaryXtra),HVSCROLL,TIP('Summary Extra Lines'),RANGE(0,9)
-                CHECK('<<Returns>'),AT(280,66),USE(Cfg:xReturnsChk),TRN
-                SPIN(@n1),AT(329,66,25,10),USE(Cfg:xReturnsXtra),HVSCROLL,TIP('Returns Extra Lines'),RANGE(0,9)
-                CHECK('<<Remarks>'),AT(188,79),USE(Cfg:xRemarksChk),TRN
-                SPIN(@n1),AT(243,79,25,10),USE(Cfg:xRemarksXtra),HVSCROLL,TIP('Remarks Extra Lines'),RANGE(0,9)
-                CHECK('Align ">"'),AT(280,79),USE(Cfg:AlignParmGT),TRN,TIP('Align closing ">" on Parms')
-                CHECK('No !!!'),AT(328,79),USE(Cfg:OmitBang3),TRN,TIP('Omit !!! prefix so just XML is output')
-                CHECK('! -----'),AT(365,66),USE(Cfg:DashLineBefore),TRN,TIP('Dashed line before Summary')
-                CHECK('UPR Types'),AT(365,79),USE(Cfg:UpperTypes),TRN,TIP('Standard Clarion Types are UPPER<13,10,13,10>' & |
-                        'Check box to Upper ALL Types e.g. STRINGTHEORY<13,10,13,10>Easier to read in Intellisense.<13>' & |
-                        '<10>Requires Parsing again ')
-                ENTRY(@s64),AT(9,94,183,10),USE(Prot:Name),SKIP,TIP('Prot:Name'),READONLY
-                ENTRY(@s255),AT(207,94,205,10),USE(Prot:RV:Source),SKIP,TIP('Prot:RV:Source'),READONLY
-                TEXT,AT(9,110,413,29),USE(Prot:Parms),SKIP,VSCROLL,FONT('Consolas'),TIP('Prot:Parms')
+                BUTTON('Past&e'),AT(8,67,31,21),USE(?PasteBtn),SKIP,TIP('Paste clipboard into above ' & |
+                        'Procedure Prototype entry and Generate')
+                BUTTON('!!! &XML Generate'),AT(43,67,41,21),USE(?XmlBtn),SKIP,TIP('Parse Procedure a' & |
+                        'bove and generate !!! XML comments')
+                BUTTON('&Copy<13,10>XML'),AT(88,67,38,21),USE(?CopyBtn),SKIP,TIP('Copy Generated XML' & |
+                        ' at bottom')
+                BUTTON('Parse Test'),AT(330,19,41,10),USE(?ParseBtn),SKIP,FONT(,8),TIP('Carl wants t' & |
+                        'o just test Parse of the Prototype'),FLAT
+                CHECK('<<Summary>'),AT(152,66),USE(Cfg:xSummaryChk),TRN
+                SPIN(@n1),AT(207,66,25,10),USE(Cfg:xSummaryXtra),HVSCROLL,TIP('Summary Extra Lines'), |
+                        RANGE(0,9)
+                CHECK('<<Remarks>'),AT(152,79),USE(Cfg:xRemarksChk),TRN
+                SPIN(@n1),AT(207,79,25,10),USE(Cfg:xRemarksXtra),HVSCROLL,TIP('Remarks Extra Lines'), |
+                        RANGE(0,9)
+                CHECK('<<Returns>'),AT(246,66),USE(Cfg:xReturnsChk),TRN
+                SPIN(@n1),AT(295,66,25,10),USE(Cfg:xReturnsXtra),HVSCROLL,TIP('Returns Extra Lines'), |
+                        RANGE(0,9)
+                CHECK('<<Parm> #.'),AT(246,79),USE(Cfg:ParamNumbered),TRN,TIP('<<Param> lines are Nu' & |
+                        'mbered 1,2,3')
+                CHECK('Align ">"'),AT(295,79),USE(Cfg:AlignParmGT),TRN,TIP('Align closing ">" on Params')
+                CHECK('UPR Types'),AT(335,66),USE(Cfg:UpperTypes),TRN,TIP('Standard Clarion Types ar' & |
+                        'e UPPER<13,10,13,10>Check box to Upper ALL Types e.g. STRINGTHEORY<13,10>' & |
+                        '<13,10>Easier to read in Intellisense.<13><10>Requires Parsing again ')
+                CHECK('! -----'),AT(392,66),USE(Cfg:DashLineBefore),TRN,TIP('Dashed line before Summary')
+                CHECK('No !!!'),AT(392,79),USE(Cfg:OmitBang3),TRN,TIP('Omit !!! prefix so just XML i' & |
+                        's output')
+                ENTRY(@s64),AT(9,94,183,10),USE(Prot:Name),SKIP,TIP('Procedure Name - Prot:Name'),READONLY
+                ENTRY(@s255),AT(207,94,215,10),USE(Prot:RV:Source),SKIP,TIP('Return Value - Prot:RV:' & |
+                        'Source'),READONLY
+                TEXT,AT(9,110,413,29),USE(Prot:Parms),SKIP,VSCROLL,FONT('Consolas'),TIP('Parameters ' & |
+                        '- Prot:Parms')
                 TEXT,AT(9,145),FULL,USE(CallTxt),SKIP,HVSCROLL,FONT('Consolas',10)
             END
             TAB(' Par&ms List '),USE(?TAB2)
                 STRING('Parameters parsed into a List for debug'),AT(8,21),USE(?LIST:ParmsQ:FYI)
-                LIST,AT(8,34),FULL,USE(?LIST:ParmsQ),VSCROLL,FROM(ParmsQ),FORMAT('21C|M~Omit~L(2)@n1b@23C|M~Const~L(2)@n' & |
-                        '1b@80L(2)|M~Type~@s32@80L(2)|M~Label~@s32@80L(2)|M~Default~@s32@20L(2)|M~Source~@s128@')
+                LIST,AT(8,34),FULL,USE(?LIST:ParmsQ),VSCROLL,FROM(ParmsQ),FORMAT('21C|M~Omit~L(2)@n1' & |
+                        'b@23C|M~Const~L(2)@n1b@80L(2)|M~Type~@s32@80L(2)|M~Label~@s32@80L(2)|M~Defa' & |
+                        'ult~@s32@20L(2)|M~Source~@s128@')
             END
             TAB(' &Return List '),USE(?TAB3)
                 PROMPT('RV Source:'),AT(10,23),USE(?PROMPT:Rv1)
@@ -136,11 +152,14 @@ Window WINDOW('<<Xml> Code Comment Generate from Prototype for Clarion'),AT(,,43
                 ENTRY(@s64),AT(47,35,205,10),USE(Prot:RV:Type),SKIP
                 PROMPT('RV Other:'),AT(10,49),USE(?PROMPT:RV3)
                 ENTRY(@s255),AT(47,48,205,10),USE(Prot:RV:Other),SKIP
-                PROMPT('Return type and attributes <13,10>parsed into a List for debug'),AT(281,29,111,24),USE(?LIST:ReturnQ:FYI)                        
-                LIST,AT(8,68),FULL,USE(?LIST:ReturnQ),VSCROLL,FROM(ReturnQ),FORMAT('90L(2)|M~Type~@s32@20L(2)~Source~@s128@')
+                PROMPT('Return type and attributes <13,10>parsed into a List for debug'),AT(281,29,111,24), |
+                        USE(?LIST:ReturnQ:FYI)
+                LIST,AT(8,68),FULL,USE(?LIST:ReturnQ),VSCROLL,FROM(ReturnQ),FORMAT('90L(2)|M~Type~@s' & |
+                        '32@20L(2)~Source~@s128@')
             END
             TAB(' INC &File '),USE(?TAB:IncFile)
-                PROMPT('Paste .INC File  Source here to Copy / Paste into Input tab'),AT(10,21),USE(?PROMPT:IncFileTxt)
+                PROMPT('Paste .INC File  Source here to Copy / Paste into Input tab'),AT(10,21), |
+                        USE(?PROMPT:IncFileTxt)
                 TEXT,AT(9,33),FULL,USE(IncFileTxt),HVSCROLL,FONT('Consolas',10)
             END
         END
@@ -222,7 +241,8 @@ PadLabel    PSTRING(128)
                 xParamName1 & |
                   CLIP(PrmQ:Label) & '"' & |
                       CHOOSE(~Cfg:AlignParmGT,'',ALL(' ',Prot:LongLabel-PrmQ:LenLabel)) & |  !Align >
-                  '>  ' & |    !Leave 2 spaces so reads better
+                  '> ' & |    !Leave 2 spaces so reads better 
+                CHOOSE(~Cfg:ParamNumbered,' ',QX &'. ') & |      !06/02/22 <Param ... > #. 
                 CHOOSE(~PrmQ:Const1,'','CONST ') & |
                 CLIP(PrmQ:Type) &' '& |
                 CHOOSE(~PrmQ:Omittable,'','Optional ') & |
