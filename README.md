@@ -6,6 +6,8 @@ Paste in a Procedure Prototype and Generate XML Code Comments in the Clarion for
 
 ![capture](readme.png)
 
+![capture1](readme1.png)
+
 The !!! \<Xml> comments must be put in the INC file for the Intellisense to appear in
  the editor when you Include that .INC file in another CLW. 
  If you put the <Xml> comments in the .CLW file the Intellisense will only appear in that CLW.
