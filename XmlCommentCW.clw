@@ -21,7 +21,10 @@
 ! 29-May-2022 Fix bugs with no parameters "PROCEDURE()", "PROCEDURE,ReturnType" and "PROCEDURE"
 !             Adjust Window to work with Manifest   
 ! 02-Jun-2022 Option to Number <Param > #. to help some with commas on omitted e.g. ST.Replace has 9 (ParamNumbered) 
-!             Cosmetic changes to window for a more logical layout and grouping
+!             Window Cosmetic: More logical layout and grouping
+! 03-Jun-2022 Remove extra spaces in Prototype. 
+!             <Param > improve: Remove 'Parameter', move 'Optional' after Label. Align better
+!             Window Cosmetic: Prototype Text is now FULL and MinWidth=Width at Open
 !-------------------------------------------------------------------------------
 
   PROGRAM
@@ -48,7 +51,7 @@ TestProtoCode       PROCEDURE(*STRING OutProto),BOOL,PROC !Popup with Test Proto
 XmlCommentCW PROCEDURE()
 !Region Data Declarations
 ProtoCode   STRING(1000)
-CallTxt     STRING(4000)  
+XmlComText  STRING(4000)  
 
 ConfigGrp   GROUP,PRE(CFG) !TODO: Button to Save these to Registry or INI
 xSummaryChk      BYTE(1)            !Do we want <Summary>
@@ -61,7 +64,7 @@ OmitBang3        BYTE(0)  !No !!! just <Xml> so can validate ? Allow \\\ for C#
 AlignParmGT      BYTE(1)  !For <param align ">"
 UpperTypes       BYTE(0)
 DashLineBefore   BYTE(0)  !05/29/22 way to add !---- to generated
-ParamNumbered   BYTE(1)  !06/02/22 <param ...> 1. 2. 
+ParamNumbered    BYTE(1)  !06/02/22 <param ...> 1. 2. 
             END 
 
 XMLcc     ANY
@@ -70,7 +73,8 @@ Bang3     PSTRING(5)        ! EQUATE('!!! ') or None        !TODO Add Indent to 
 
 ProtoGrp  GROUP,PRE()
 Prot:Name   STRING(64)
-Prot:LongLabel  BYTE
+Prot:LongLabel  BYTE         
+Prot:LongTypeCLA BYTE        !Longest of only Clarion Types BYTE SHORT LONG
 Prot:RV:Source  STRING(256)  !All Return Source after (Parms)
 Prot:RV:Type    STRING(128)  !Type Returned
 Prot:RV:PROC    PSTRING(5)   !Blank or PROC
@@ -83,10 +87,12 @@ ParmsQ  QUEUE,PRE(PrmQ)
 Omittable   BYTE          !PrmQ:Omittable
 Const1      BYTE          !PrmQ:Const1
 Type        STRING(32)    !PrmQ:Type
+LenType     BYTE          !PrmQ:LenType
+TypeIsCLA   BYTE          !PrmQ:TypeIsCLA   !Is Clarion Type BYTE SHORT LONG
 Label       STRING(32)    !PrmQ:Label
+LenLabel    BYTE          !PrmQ:LenLabel
 Default     STRING(32)    !PrmQ:Default   Type=
 Source      STRING(128)   !PrmQ:Source 
-LenLabel    BYTE          !PrmQ:LenLabel
         END
         
 ReturnQ QUEUE,PRE(RetQ)
@@ -105,7 +111,9 @@ Window WINDOW('<<Xml> Code Comment Generate from Prototype for Clarion'),AT(,,43
                         FONT('Consolas')
                 BUTTON('Test Data...'),AT(384,19,41,10),USE(?TestBtn),SKIP,FONT(,8),TIP('Pick Test P' & |
                         'rototype from Popup'),FLAT
-                TEXT,AT(9,31,414,30),USE(ProtoCode),VSCROLL,FONT('Consolas'),DROPID('~TEXT'),ALRT(CtrlQ)
+                TEXT,AT(9,31,,30),FULL,USE(ProtoCode),VSCROLL,FONT('Consolas'),TIP('Prototype of Pro' & |
+                        'cedure with (Parameters),RetunValue<13,10>Single line without continuation'), |
+                        DROPID('~TEXT'),ALRT(CtrlQ)
                 BUTTON('Past&e'),AT(8,67,31,21),USE(?PasteBtn),SKIP,TIP('Paste clipboard into above ' & |
                         'Procedure Prototype entry and Generate')
                 BUTTON('!!! &XML Generate'),AT(43,67,41,21),USE(?XmlBtn),SKIP,TIP('Parse Procedure a' & |
@@ -121,11 +129,11 @@ Window WINDOW('<<Xml> Code Comment Generate from Prototype for Clarion'),AT(,,43
                 SPIN(@n1),AT(207,79,25,10),USE(Cfg:xRemarksXtra),HVSCROLL,TIP('Remarks Extra Lines'), |
                         RANGE(0,9)
                 CHECK('<<Returns>'),AT(246,66),USE(Cfg:xReturnsChk),TRN
-                SPIN(@n1),AT(295,66,25,10),USE(Cfg:xReturnsXtra),HVSCROLL,TIP('Returns Extra Lines'), |
+                SPIN(@n1),AT(296,66,25,10),USE(Cfg:xReturnsXtra),HVSCROLL,TIP('Returns Extra Lines'), |
                         RANGE(0,9)
                 CHECK('<<Parm> #.'),AT(246,79),USE(Cfg:ParamNumbered),TRN,TIP('<<Param> lines are Nu' & |
                         'mbered 1,2,3')
-                CHECK('Align ">"'),AT(295,79),USE(Cfg:AlignParmGT),TRN,TIP('Align closing ">" on Params')
+                CHECK('Align ">"'),AT(296,79),USE(Cfg:AlignParmGT),TRN,TIP('Align closing ">" on Params')
                 CHECK('UPR Types'),AT(335,66),USE(Cfg:UpperTypes),TRN,TIP('Standard Clarion Types ar' & |
                         'e UPPER<13,10,13,10>Check box to Upper ALL Types e.g. STRINGTHEORY<13,10>' & |
                         '<13,10>Easier to read in Intellisense.<13><10>Requires Parsing again ')
@@ -136,14 +144,16 @@ Window WINDOW('<<Xml> Code Comment Generate from Prototype for Clarion'),AT(,,43
                 ENTRY(@s255),AT(207,94,215,10),USE(Prot:RV:Source),SKIP,TIP('Return Value - Prot:RV:' & |
                         'Source'),READONLY
                 TEXT,AT(9,110,413,29),USE(Prot:Parms),SKIP,VSCROLL,FONT('Consolas'),TIP('Parameters ' & |
-                        '- Prot:Parms')
-                TEXT,AT(9,145),FULL,USE(CallTxt),SKIP,HVSCROLL,FONT('Consolas',10)
+                        '- Prot:Parms'),READONLY
+                TEXT,AT(9,145),FULL,USE(XmlComText),SKIP,HVSCROLL,FONT('Consolas',10)
             END
             TAB(' Par&ms List '),USE(?TAB2)
                 STRING('Parameters parsed into a List for debug'),AT(8,21),USE(?LIST:ParmsQ:FYI)
                 LIST,AT(8,34),FULL,USE(?LIST:ParmsQ),VSCROLL,FROM(ParmsQ),FORMAT('21C|M~Omit~L(2)@n1' & |
-                        'b@23C|M~Const~L(2)@n1b@80L(2)|M~Type~@s32@80L(2)|M~Label~@s32@80L(2)|M~Defa' & |
-                        'ult~@s32@20L(2)|M~Source~@s128@')
+                        'b@23C|M~Const~L(2)@n1b@80L(2)|M~Type~@s32@16R(2)|M~Len~C(0)@n3@Q''Length of' & |
+                        ' Type''14R(2)|M~Cla~C(0)@n1b@Q''Clarion Native Type''80L(2)|M~Label~@s32@16' & |
+                        'R(2)|M~Len~C(0)@n3@Q''Length of Label''80L(2)|M~Default~@s32@20L(2)|M~Sourc' & |
+                        'e~@s128@')
             END
             TAB(' &Return List '),USE(?TAB3)
                 PROMPT('RV Source:'),AT(10,23),USE(?PROMPT:Rv1)
@@ -181,7 +191,7 @@ XmlGenElement       PROCEDURE(STRING ElementOpen, STRING ElementClose, BYTE pXtr
     ?LIST:ReturnQ{PROP:NoTheme}=1   !Incase Manifest
     SYSTEM{PROP:PropVScroll}=1  
     SYSTEM{PROP:MsgModeDefault}=MSGMODE:CANCOPY
-    0{PROP:MinWidth} = 0{PROP:Width} * .50 ; 0{PROP:MinHeight} = 0{PROP:Height} * .70
+    0{PROP:MinWidth} = 0{PROP:Width} * 1 ; 0{PROP:MinHeight} = 0{PROP:Height} * .70
     COMPILE('!***',_CbWndPreview_)
         WndPrvCls.Init(2)           !Add Carl's Window Preview Class to allow runtime window design
              !***
@@ -197,10 +207,10 @@ XmlGenElement       PROCEDURE(STRING ElementOpen, STRING ElementClose, BYTE pXtr
         
         CASE ACCEPTED() 
         OF ?PasteBtn ; ProtoCode=CLIPBOARD() ; POST(EVENT:Accepted,?XmlBtn)
-        OF ?TestBtn  ; IF TestProtoCode(ProtoCode) THEN POST(EVENT:Accepted,?XmlBtn).
+        OF ?TestBtn  ; IF TestProtoCode(ProtoCode) THEN CLEAR(ProtoGrp) ; CLEAR(XmlComText) ; DISPLAY ; SELECT(?XmlBtn). !06/03/22 POST(EVENT:Accepted,?XmlBtn).
         OF ?ParseBtn ; DOO.ProtoParse() ; DISPLAY 
         OF ?XmlBtn   ; DOO.ProtoParse() ; DOO.XmlGenerate() ; DISPLAY 
-        OF ?CopyBtn  ; SetCLIPBOARD(CallTxt)
+        OF ?CopyBtn  ; SetCLIPBOARD(XmlComText)
         OF ?RunAgainBtn ; RUN(COMMAND('0'))
         END
     END
@@ -219,8 +229,10 @@ xReturns2   EQUATE('<</returns>')
 
 bRemarksCDATA   BYTE(0) ! Stick a CDATA in Remarks <![CDATA[ <test>Data</test> ]]>
 QX          USHORT
-Parm1       CSTRING(256)
+Parm1       STRING(256)
 PadLabel    PSTRING(128)
+TypeLen     USHORT
+Parm1Len    USHORT
     CODE
     XMLcc='' 
     Bang3=CHOOSE(~Cfg:OmitBang3,'!!! ','')
@@ -237,6 +249,8 @@ PadLabel    PSTRING(128)
     !---- Parameters:  <param name="Variable"> Description </param> --------------     
     LOOP QX=1 TO RECORDS(ParmsQ)
         GET(ParmsQ,QX)
+        TypeLen=PrmQ:LenType
+        IF TypeLen < Prot:LongTypeCLA AND ~PrmQ:Const1 THEN TypeLen=Prot:LongTypeCLA.   !06/03/22 UNSIGNED is 8
         Parm1 = Bang3 & |
                 xParamName1 & |
                   CLIP(PrmQ:Label) & '"' & |
@@ -244,12 +258,15 @@ PadLabel    PSTRING(128)
                   '> ' & |    !Leave 2 spaces so reads better 
                 CHOOSE(~Cfg:ParamNumbered,' ',QX &'. ') & |      !06/02/22 <Param ... > #. 
                 CHOOSE(~PrmQ:Const1,'','CONST ') & |
-                CLIP(PrmQ:Type) &' '& |
-                CHOOSE(~PrmQ:Omittable,'','Optional ') & |
-                'Parameter '  & CLIP(PrmQ:Label) &'   '& |
-                CHOOSE(~PrmQ:Default,'','  Default=' & CLIP(PrmQ:Default) ) & |
-                ALL(' ',10) & xParamEnd & xCRLF                
-        XMLcc=XMLcc & CLIP(Parm1)
+                SUB(PrmQ:Type,1,TypeLen) &' '& |                !Type BYTE SHORT LONG STRING or Named e.g. StringTheory
+                CLIP(PrmQ:Label) &' '& |                        !06/03/22 remove 'Parameter '  & 
+                CHOOSE(~PrmQ:Omittable,'',' Optional ') & |     !06/03/22 moved Optional after Label
+                CHOOSE(~PrmQ:Default,'',' Default=' & CLIP(PrmQ:Default) )
+
+        Parm1Len=LEN(CLIP(Parm1)) 
+        IF Parm1Len < 80 THEN Parm1Len=80.    !06/03/22 align </param> somewhat
+        XMLcc=XMLcc & SUB(Parm1,1,Parm1Len) & |
+                      ALL(' ',10) & xParamEnd & xCRLF
     END
 
     !---- <returns>  </returns> --------------------------------------- <returns>
@@ -265,7 +282,7 @@ PadLabel    PSTRING(128)
     IF Cfg:xRemarksChk THEN 
        DOO.XmlGenElement(xRemarks1,xRemarks2,Cfg:xRemarksXtra, CLIP(Prot:RV:Source) & ALL(' ',10))           
     END 
-    CallTxt=XMLcc
+    XmlComText=XMLcc
     RETURN
    
 !!! <param name="SearchValue">Sub-string to search for</param>
@@ -292,6 +309,7 @@ LNo USHORT
 !---------------------------- 
 DOO.ProtoParse PROCEDURE()
 X       USHORT
+O       USHORT      !06/03/22 Compress extra spaces
 P1      USHORT      !1st (
 P2      USHORT      !1st )
 Cma1    USHORT      !Comma 1 after PROCEDURE
@@ -303,12 +321,20 @@ B1      USHORT
     CODE
     CLEAR(ProtoGrp)
     FREE(ParmsQ)
-    FREE(ReturnQ)  
-    LOOP X=1 TO SIZE(ProtoCode)  !Remove 9,13,10 |
+    FREE(ReturnQ)
+    O=0
+    LOOP X=1 TO SIZE(ProtoCode)  !Remove 9,13,10 | line continuation
         CASE VAL(ProtoCode[X])
-        OF 0 TO 31 
-        OROF VAL('|') ; ProtoCode[X]=''
-        END
+        OF 0  TO 31 
+        OROF VAL('|') 
+             ProtoCode[X]=''    !Change 9,13,10 | to spaces
+             !FYI OROF below also executes for 0-31 
+        OROF 32
+             IF O AND ProtoCode[O]='' THEN CYCLE.    !06/03/22 Last char is a Space and so is this so skip double spaces
+        END                                          !06/03/22 Comment the above "IF O.." to test with extra spaces
+        O += 1
+        IF O = X THEN CYCLE.
+        ProtoCode[O] = ProtoCode[X] ; ProtoCode[X]=''
     END
     Prot:Parms = 'Failed'
     Source = ProtoCode
@@ -412,11 +438,17 @@ B1      USHORT
     IF Prot:LongLabel < PrmQ:LenLabel THEN
        Prot:LongLabel = PrmQ:LenLabel 
     END
-    
+
+    PrmQ:LenType = LEN(CLIP(PrmQ:Type))  
     IF ClarionDataType(PrmQ:Type,PrmQ:Type) THEN 
-       PrmQ:Type=UPPER(PrmQ:Type) 
+       PrmQ:Type=UPPER(PrmQ:Type)
+       PrmQ:TypeIsCLA=True 
+       IF Prot:LongTypeCLA < PrmQ:LenType THEN
+          Prot:LongTypeCLA = PrmQ:LenType 
+       END
     ELSE   !Not a Cla Type 
        ClarionNamedType(PrmQ:Type, CFG:UpperTypes)  !Upper
+       PrmQ:TypeIsCLA=False
     END
     RETURN
 !------------------------------------------------
@@ -520,14 +552,14 @@ TestProtoCode PROCEDURE(*STRING OutProto)!,BOOL !Popup with Test Prototypes
     CODE
     EXECUTE POPUP('ReplaceBetween ( 9 parms and <<Omit> )' & |
                   '|FindBetween( *Parms )' & |
-                  '|LinesViewSplit( Class,  *Parms, <<Omit> )' & |
+                  '|LinesViewSplit( Class,  *Parms, <<Omit> ) has 13,10 and Continuaton' & |
                   '|SerializeQueue( *Q ) no return' & |
                   '|AddCount( Arrays[,] )' & |
                   '|PatternsQ2String( NamedType),*String' & |
                   '')
         OutProto='ReplaceBetween PROCEDURE(string pLeft, <<string pRight>, string pOldValue, string pNewValue, long pCount=0, long pStart=1, long pEnd=0, long pNoCase=0, long pReplaceAll=false),Long,Proc,virtual'
         OutProto='FindBetween PROCEDURE(const *string pFindIn, string pLeft, string pRight, *long outStart, *long outEnd, bool pNoCase=false, long pExclusive=true),string'
-        OutProto='LinesViewSplit  PROCEDURE(StringTheory STwithLinesSplitDone, STRING SplitDelim, <<STRING QuoteStart>,<<STRING QuoteEnd>, BYTE RemoveQuotes=TRUE, bool pClip=false, bool pLeft=false, <<STRING pSeparator>, long pNested=false)'
+        OutProto='LinesViewSplit PROCEDURE(StringTheory STwithLinesSplitDone, STRING SplitDelim, <<STRING QuoteStart>, <<STRING QuoteEnd>, BYTE RemoveQuotes=TRUE, |<13,10> {25} bool pClip=false, bool pLeft=false, <<STRING pSeparator>, long pNested=false)'
         OutProto='SerializeQueue PROCEDURE(*Queue pQueue,<<string pRecordBoundary>,*StringTheory pFieldBoundary,<<string pQuotestart>,<<string pQuoteEnd>,Long pLevel=1,Long pFree=true),virtual'
         OutProto='AddCount PROCEDURE(*LONG[,] Total,*LONG[,] Current)'
         OutProto='PatternsQ2String  PROCEDURE(PatternQType PatQ, *LONG OutLength),*STRING'
@@ -535,4 +567,3 @@ TestProtoCode PROCEDURE(*STRING OutProto)!,BOOL !Popup with Test Prototypes
         RETURN FALSE
     END 
     RETURN TRUE
- 
