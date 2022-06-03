@@ -26,6 +26,7 @@
 !             <Param > improve: Remove 'Parameter', move 'Optional' after Label. Alsign better
 !             Window Cosmetic: Prototype Text is now FULL and MinWidth=Width at Open
 ! 03-Jun-2022 Window reformat to move debug fields off first tab
+! 03-Jun-2022 Spot By *Address and adjust alignment. Move CONST after Label
 !-------------------------------------------------------------------------------
 
   PROGRAM
@@ -39,7 +40,7 @@ WndPrvCls CBWndPreviewClass
     
   MAP
 XmlCommentCW        PROCEDURE() 
-ClarionDataType     PROCEDURE(STRING InType,<*STRING OutEntityBug>),BYTE  !1=Type 2=Entity *implied
+ClarionDataType     PROCEDURE(STRING InType,<*STRING OutEntity_PlusBug>,<*PSTRING OutEntity_BugOnly>),BYTE  !returns 1=ClaType 2=Entity *implied 0=Not CLA
 ClarionNamedType    PROCEDURE(*STRING InOutType, BYTE pUpper)  !Upper 1st Letter of Named Type
 ParseString2Queue   PROCEDURE(CONST *STRING pString, STRING cDelim1, QUEUE OutQueue, *STRING QueString, BYTE SkipBlanks=1),LONG,PROC
 TestProtoCode       PROCEDURE(*STRING OutProto),BOOL,PROC !Popup with Test Prototypes
@@ -74,8 +75,10 @@ Bang3     PSTRING(5)        ! EQUATE('!!! ') or None        !TODO Add Indent to 
 
 ProtoGrp  GROUP,PRE()
 Prot:Name   STRING(64)
-Prot:LongLabel  BYTE         
-Prot:LongTypeCLA BYTE        !Longest of only Clarion Types BYTE SHORT LONG
+Prot:BigLabel   BYTE       !Big=MaxLen of Labels to align  
+Prot:BigTypeCLA BYTE       !Big=MaxLen of only Clarion Types BYTE SHORT LONG
+Prot:BigTypeAll BYTE       !Big=MaxLen Type Name of All Types
+Prot:ByAddressZ BYTE       !There are *TYPE By Addressez for All Types
 Prot:RV:Source  STRING(256)  !All Return Source after (Parms)
 Prot:RV:Type    STRING(128)  !Type Returned
 Prot:RV:PROC    PSTRING(5)   !Blank or PROC
@@ -87,12 +90,13 @@ Prot:Parms      STRING(1000)
 ParmsQ  QUEUE,PRE(PrmQ)
 Omittable   BYTE          !PrmQ:Omittable
 Const1      BYTE          !PrmQ:Const1
-Type        STRING(32)    !PrmQ:Type
+Asterisk    PSTRING(2)    !PrmQ:Asterisk    *TYPE passed by address, adjust alignment
+Type        STRING(32)    !PrmQ:Type        !Does NOT have *
 LenType     BYTE          !PrmQ:LenType
 TypeIsCLA   BYTE          !PrmQ:TypeIsCLA   !Is Clarion Type BYTE SHORT LONG
 Label       STRING(32)    !PrmQ:Label
 LenLabel    BYTE          !PrmQ:LenLabel
-Default     STRING(32)    !PrmQ:Default   Type=
+Default     STRING(32)    !PrmQ:Default     Type=Default Value
 Source      STRING(128)   !PrmQ:Source
         END
         
@@ -103,14 +107,18 @@ Source      STRING(64)      !RetQ:Source
 IncFileTxt  STRING(32000)
 !EndRegion Data Declarations
         
-Window WINDOW('<<Xml> Code Comment Generate from Prototype for Clarion'),AT(,,430,200),GRAY,SYSTEM, |
+Window WINDOW('<<Xml> Code Comment Generate from Prototype for Clarion'),AT(,,430,210),GRAY,SYSTEM, |
             ICON('XmlComGn.ICO'),FONT('Segoe UI',9),RESIZE
         SHEET,AT(3,4),FULL,USE(?SHEET1)
             TAB(' &Input  '),USE(?Tab:Input)
                 PROMPT('&Prototype:'),AT(9,21),USE(?Prototype1)
                 PROMPT('ProcedureName  PROCEDURE(...parameters...),Return'),AT(46,21),USE(?Prototype2), |
                         FONT('Consolas')
-                BUTTON('Test Data...'),AT(384,19,41,10),USE(?TestBtn),SKIP,FONT(,8),TIP('Pick Test P' & |
+                BUTTON('Copy'),AT(293,19,27,10),USE(?CopyProtBtn),SKIP,FONT(,8),TIP('Copy Prototype ' & |
+                        'to Clipboard'),FLAT
+                BUTTON('Parse Test'),AT(334,19,41,10),USE(?ParseBtn),SKIP,FONT(,8),TIP('Carl wants t' & |
+                        'o just test Parse of the Prototype'),FLAT
+                BUTTON('Test Data...'),AT(385,19,41,10),USE(?TestBtn),SKIP,FONT(,8),TIP('Pick Test P' & |
                         'rototype from Popup'),FLAT
                 TEXT,AT(9,31,,30),FULL,USE(ProtoCode),VSCROLL,FONT('Consolas'),TIP('Prototype of Pro' & |
                         'cedure with (Parameters),RetunValue<13,10>Single line without continuation'), |
@@ -121,8 +129,6 @@ Window WINDOW('<<Xml> Code Comment Generate from Prototype for Clarion'),AT(,,43
                         'bove and generate !!! XML comments')
                 BUTTON('&Copy<13,10>XML'),AT(88,67,38,21),USE(?CopyBtn),SKIP,TIP('Copy Generated XML' & |
                         ' at bottom')
-                BUTTON('Parse Test'),AT(330,19,41,10),USE(?ParseBtn),SKIP,FONT(,8),TIP('Carl wants t' & |
-                        'o just test Parse of the Prototype'),FLAT
                 CHECK('<<Summary>'),AT(152,66),USE(Cfg:xSummaryChk),TRN
                 SPIN(@n1),AT(207,66,25,10),USE(Cfg:xSummaryXtra),HVSCROLL,TIP('Summary Extra Lines'), |
                         RANGE(0,9)
@@ -147,10 +153,10 @@ Window WINDOW('<<Xml> Code Comment Generate from Prototype for Clarion'),AT(,,43
                 STRING('Parameters parsed from Prototype into a List for debug'),AT(8,21), |
                         USE(?LIST:ParmsQ:FYI)
                 LIST,AT(8,34),FULL,USE(?LIST:ParmsQ),VSCROLL,FROM(ParmsQ),FORMAT('21C|M~Omit~L(2)@n1' & |
-                        'b@23C|M~Const~L(2)@n1b@50L(2)|M~Type~@s32@16R(2)|M~Len~C(0)@n3@Q''Length of' & |
-                        ' Type''14R(2)|M~Cla~C(0)@n1b@Q''Clarion Native Type''80L(2)|M~Label~@s32@16' & |
-                        'R(2)|M~Len~C(0)@n3@Q''Length of Label''80L(2)|M~Default~@s32@20L(2)|M~Sourc' & |
-                        'e~@s128@')
+                        'b@23C|M~Const~L(2)@n1b@10C|M~*~@s1@Q''By Address''50L(2)|M~Type~@s32@16R(3)' & |
+                        '|M~Len~C(0)@n3@Q''Length of Type''14C|M~Cla~@n1b@Q''Clarion Native Type''80' & |
+                        'L(2)|M~Label~@s32@16R(3)|M~Len~C(0)@n3@Q''Length of Label''80L(2)|M~Default' & |
+                        '~@s32@20L(2)|M~Source~@s128@')
             END
             TAB(' &Return List  '),USE(?Tab:Return)
                 PROMPT('Name:'),AT(10,22),USE(?PROMPT:Rv0)
@@ -212,6 +218,7 @@ XmlGenElement       PROCEDURE(STRING ElementOpen, STRING ElementClose, BYTE pXtr
         OF ?XmlBtn   ; DOO.ProtoParse() ; DOO.XmlGenerate() ; DISPLAY 
         OF ?CopyBtn  ; SetCLIPBOARD(XmlComText)
         OF ?RunAgainBtn ; RUN(COMMAND('0'))
+        OF ?CopyProtBtn ; SetCLIPBOARD(ProtoCode)
         END
     END
  
@@ -229,7 +236,7 @@ xReturns2   EQUATE('<</returns>')
 
 bRemarksCDATA   BYTE(0) ! Stick a CDATA in Remarks <![CDATA[ <test>Data</test> ]]>
 QX          USHORT
-Parm1       STRING(256)
+Parm1       CSTRING(256)
 PadLabel    PSTRING(128)
 TypeLen     USHORT
 Parm1Len    USHORT
@@ -246,25 +253,37 @@ Parm1Len    USHORT
        DOO.XmlGenElement(xSummary1,xSummary2,Cfg:xSummaryXtra, CLIP(Prot:Name) &'() {10}')
     END
 
-    !---- Parameters:  <param name="Variable"> Description </param> --------------     
+    !Want Clarion Types aligned as same width. If Named Type's are +4 use that length.
+    IF INRANGE(Prot:BigTypeAll,Prot:BigTypeCLA+1,Prot:BigTypeCLA+4) THEN   !Named types just 4 longer
+       Prot:BigTypeCLA = Prot:BigTypeAll
+    END
+
+    !---- Parameters:  <param name="Variable"> Description </param> --------------
     LOOP QX=1 TO RECORDS(ParmsQ)
         GET(ParmsQ,QX)
+        IF Prot:ByAddressZ AND ~PrmQ:Asterisk THEN      !Some are *Address but not this, so leave 1 Space
+           PrmQ:Asterisk=' '                            !note PSTRING(2)
+        END
         TypeLen=PrmQ:LenType
-        IF TypeLen < Prot:LongTypeCLA AND ~PrmQ:Const1 THEN TypeLen=Prot:LongTypeCLA.   !06/03/22 UNSIGNED is 8
+        IF TypeLen < Prot:BigTypeCLA AND ~PrmQ:Const1 THEN TypeLen=Prot:BigTypeCLA.   !06/03/22 UNSIGNED is 8
         Parm1 = Bang3 & |
                 xParamName1 & |
                   CLIP(PrmQ:Label) & '"' & |
-                      CHOOSE(~Cfg:AlignParmGT,'',ALL(' ',Prot:LongLabel-PrmQ:LenLabel)) & |  !Align >
+                      CHOOSE(~Cfg:AlignParmGT,'',ALL(' ',Prot:BigLabel-PrmQ:LenLabel)) & |  !Align >
                   '> ' & |    !Leave 2 spaces so reads better
-                CHOOSE(~Cfg:ParamNumbered,' ',QX &'. ') & |      !06/02/22 <Param ... > #.
-                CHOOSE(~PrmQ:Const1,'','CONST ') & |
-                SUB(PrmQ:Type,1,TypeLen) &' '& |                !Type BYTE SHORT LONG STRING or Named e.g. StringTheory
-                CLIP(PrmQ:Label) &' '& |                        !06/03/22 remove 'Parameter '  &
-                CHOOSE(~PrmQ:Omittable,'',' Optional ') & |     !06/03/22 moved Optional after Label
-                CHOOSE(~PrmQ:Default,'',' Default=' & CLIP(PrmQ:Default) )
+             CHOOSE(~Cfg:ParamNumbered,' ',QX &'. ') & |        !06/02/22 <Param ... > #.
+                     PrmQ:Asterisk                   & |        !* or ' ', or '' IF NONE HAVE *
+                 SUB(PrmQ:Type,1,TypeLen)        &' '& |        !Type BYTE SHORT LONG STRING or Named e.g. StringTheory
+                CLIP(PrmQ:Label)                 &' '& |        !06/03/22 remove 'Parameter '  &
+             CHOOSE(~PrmQ:Const1,'',' CONST ')       & |        !06/03/22 moved after TYPE so Type Aligns
+             CHOOSE(~PrmQ:Omittable,'',' Optional ') & |        !06/03/22 moved Optional after Label
+             CHOOSE(~PrmQ:Default,'',' Default=' & CLIP(PrmQ:Default) )
 
         Parm1Len=LEN(CLIP(Parm1))
-        IF Parm1Len < 80 THEN Parm1Len=80.    !06/03/22 align </param> somewhat
+        IF Parm1Len < 80 AND Cfg:AlignParmGT THEN       !Align </param> somewhat
+           Parm1=Parm1 & ALL(' ')                       !note CString
+           Parm1Len=80
+        END
         XMLcc=XMLcc & SUB(Parm1,1,Parm1Len) & |
                       ALL(' ',10) & xParamEnd & xCRLF
     END
@@ -372,7 +391,6 @@ B1      USHORT
     !Prototype: Type [ Label ] = Default        Default Optional
     !Prototype: Type[] [ Label ]                Array[] has Parens
 
-    Prot:LongLabel = 0
     IF Prot:Parms THEN
        B1=1       
        Parms = Prot:Parms
@@ -414,7 +432,7 @@ B1      USHORT
     Src = PrmQ:Source
     IF Src[1]='<<' THEN                     ! < [CONST] Type [ Label ] = Default >
        PrmQ:Omittable = 1              !-->   <
-       Src=SUB(Src,2,99)
+       Src=LEFT(SUB(Src,2,199))
        LenP=LEN(CLIP(Src))
        IF LenP AND Src[LenP]='>' THEN  !---------------------------------------> >
           Src[LenP]=' '
@@ -422,34 +440,47 @@ B1      USHORT
     END                                     !   [CONST] TYPE  Label = Default 
     IF UPPER(SUB(Src,1,6))='CONST ' THEN  !--->  CONST 
        PrmQ:Const1 = 1    ! 123456
-       Src=LEFT(SUB(Src,6,99))
+       Src=LEFT(SUB(Src,6,199))
     END                                     !           TYPE Label = Default 
     X=INSTRING('=',Src)                   !----------------------> = Default
     IF X THEN 
-       PrmQ:Default=LEFT(SUB(Src,X+1,99)) 
+       PrmQ:Default=LEFT(SUB(Src,X+1,199)) 
        Src=SUB(Src,1,X-1)
-    END                                     !           TYPE Label
+    END
+    IF Src[1:2]='* ' THEN               !By Address "* TYPE" with Space after Asterisk
+       Src='*' & LEFT(SUB(Src,2,199))   !Take out the Space(s)
+    END 
+                                            !           TYPE Label
                                             !     Array TYPE[] Label 
-    X=INSTRING(']',Src)     !Array[]  ? --------------------> ]
+    X=INSTRING(']',Src)     !Array[]  ? -------------------> ]
     IF ~X THEN X=INSTRING(' ',Src).    !------------------->       Space after TYPE
     PrmQ:Type = SUB(Src,1,X)           !                TYPE
-    PrmQ:Label= LEFT(SUB(Src,X+1,99))  !                     Label
+    PrmQ:Label= LEFT(SUB(Src,X+1,199))  !                     Label
     PrmQ:LenLabel = LEN(CLIP(PrmQ:Label))
-    IF Prot:LongLabel < PrmQ:LenLabel THEN
-       Prot:LongLabel = PrmQ:LenLabel
+    IF Prot:BigLabel < PrmQ:LenLabel THEN
+       Prot:BigLabel = PrmQ:LenLabel
     END
 
+    IF PrmQ:Type[1]='*' THEN
+       PrmQ:Asterisk='*'
+       PrmQ:Type=LEFT(SUB(PrmQ:Type,2,199))             !Cutoff * so not measured in Len
+    END
+    
     PrmQ:LenType = LEN(CLIP(PrmQ:Type))
-    IF ClarionDataType(PrmQ:Type,PrmQ:Type) THEN
+    IF ClarionDataType(PrmQ:Type,,PrmQ:Asterisk) THEN   !Note Asterisk set ='*' for Entity like QUEUE FILE 
        PrmQ:Type=UPPER(PrmQ:Type)
        PrmQ:TypeIsCLA=True
-       IF Prot:LongTypeCLA < PrmQ:LenType THEN
-          Prot:LongTypeCLA = PrmQ:LenType
+       IF Prot:BigTypeCLA < PrmQ:LenType THEN
+          Prot:BigTypeCLA = PrmQ:LenType
        END
     ELSE   !Not a Cla Type
        ClarionNamedType(PrmQ:Type, CFG:UpperTypes)  !Upper
        PrmQ:TypeIsCLA=False
     END
+    IF Prot:BigTypeAll < PrmQ:LenType THEN
+       Prot:BigTypeAll = PrmQ:LenType
+    END
+    IF PrmQ:Asterisk='*' THEN Prot:ByAddressZ=1.
     RETURN
 !------------------------------------------------
 DOO.ReturnValueParse PROCEDURE() 
@@ -496,7 +527,7 @@ X   USHORT
     END 
     RETURN
 !=================================================================
-ClarionDataType PROCEDURE(STRING InType,<*STRING OutEntityBug>)!,LONG  1=Type 2=Entity *implied
+ClarionDataType PROCEDURE(STRING InType,<*STRING OutEntity_PlusBug>,<*PSTRING OutEntity_BugOnly>)!,BYTE returns 1=ClaType 2=Entity *implied 0=NotCla
 RetType BYTE
     CODE
     IF SUB(InType,1,1)='*' THEN InType=SUB(InType,2,99). 
@@ -508,9 +539,12 @@ RetType BYTE
            OrOf 'UINT64' OrOf 'ULONG' OrOf 'UNSIGNED' OrOf 'USHORT' OrOf 'USTRING' OrOf 'VARIANT' 
         RetType = 1    
     OF 'FILE' OROF 'VIEW' OROF 'KEY' OROF 'INDEX' OROF 'QUEUE' OROF 'WINDOW' OROF 'REPORT' OROF 'BLOB'
-        IF ~OMITTED(OutEntityBug) THEN 
-            OutEntityBug='*' & InType
+        IF ~OMITTED(OutEntity_PlusBug) THEN 
+            OutEntity_PlusBug='*' & InType
         END
+        IF ~OMITTED(OutEntity_BugOnly) THEN 
+            OutEntity_BugOnly='*'
+        END        
         RetType = 2
     END
   !  stop('RetType=' & RetType & '  "' & InType &'"')
@@ -552,7 +586,7 @@ TestProtoCode PROCEDURE(*STRING OutProto)!,BOOL !Popup with Test Prototypes
     CODE
     EXECUTE POPUP('ReplaceBetween ( 9 parms and <<Omit> )' & |
                   '|FindBetween( *Parms )' & |
-                  '|LinesViewSplit( Class,  *Parms, <<Omit> ) has 13,10 and Continuaton' & |
+                  '|LinesViewSplit( Class,  Defaults, <<Omit> ) has 13,10 and Continuaton' & |
                   '|SerializeQueue( *Q ) no return' & |
                   '|AddCount( Arrays[,] )' & |
                   '|PatternsQ2String( NamedType),*String' & |
