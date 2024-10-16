@@ -248,6 +248,10 @@ TypeLen     USHORT
 Parm1Len    USHORT
     CODE
     XMLcc='' 
+    IF Prot:Parms[1:6] = 'Failed' THEN
+       XmlComText = Prot:Parms
+       RETURN 
+    END    
     Bang3=CHOOSE(~Cfg:OmitBang3,'!!! ','')
 
     IF Cfg:DashLineBefore THEN  ! --- Dashed Line -------------------------------------------------
@@ -316,7 +320,7 @@ Parm1Len    USHORT
 
     XmlComText=XMLcc
     RETURN
-   
+
 !!! <param name="SearchValue">Sub-string to search for</param>
 !!! <param name="Step">The number of characters to jump. Default is 1</param>
 !!! <param name="Start">Optional parameter to indicate what position to start search. Default is beginning.</param>
@@ -368,7 +372,8 @@ B1      USHORT
         IF O = X THEN CYCLE.
         ProtoCode[O] = ProtoCode[X] ; ProtoCode[X]=''
     END
-    Prot:Parms = 'Failed'
+    ProtoCode = LEFT(ProtoCode)                 !No Leading Spaces, likely pasted from MAP using old syntax e.g. BuiltIns.clw 
+    Prot:Parms = 'Failed: ProtoParse ?'
     Source = ProtoCode
     P1=INSTRING('(',Source)                     !Find "(" in  "Name PROCEDURE()"
     P2=INSTRING(')',Source,1,P1)                !Find ")" in  "Name PROCEDURE()"
@@ -380,15 +385,17 @@ B1      USHORT
        P1=LEN(CLIP(Source))+1                   !Set "(" pos = Length + 1 ... also ")" pos
        P2=P1
     ELSIF ~P1 OR ~P2 OR P2<P1+1 THEN            !Bad Paren Positions like )(   05/29/22 allow ()
-        Prot:Parms = 'Failed: (Parens) ' & |
+        Prot:Parms = 'Failed: to find (Parens) ' & |
                       CHOOSE(~P1,', No (','') & CHOOSE(P1 AND ~P2,', No )','') & |
                       CHOOSE(P1 AND P2 AND P2<=P1+1,', ) <= (','')
                                 
         RETURN
     END 
     X=INSTRING(' ',SUB(Source,1,P1-1))      !Find space between "LABEL Procedure("  P1=First (
-    IF ~X THEN 
-        Prot:Parms = 'Failed: No Prototype Name Space' ; RETURN  
+    IF ~X AND P1 > 1 THEN                   !Assume old syntax  "    LABEL(parms)"  That does not start in column 1
+        X = P1-1                            !X=End of LABEL .... It's 1 byte before P1=First ( 
+    ELSIF ~X THEN 
+        Prot:Parms = 'Failed: No Space between NAME and (Prototype)' ; RETURN  
     END
 !    Message('P1=' & P1 &'  P2=' & P2 & '  Cma1=' & Cma1 & |
 !            '||RV="' & clip(SUB(Source,P2+1,99)) &'"'& |
