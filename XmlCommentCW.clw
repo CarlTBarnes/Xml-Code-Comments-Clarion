@@ -516,15 +516,16 @@ X   USHORT
                         RetQ:NameU
         ELSE 
             CASE RetQ:NameU
-            OROF 'C'
+            OF   'C'
             OROF 'DLL'
             OROF 'NAME'
             OROF 'PASCAL'
             OROF 'PRIVATE'
-            OROF 'PROC'      ; Prot:RV:PROC='PROC'
             OROF 'PROTECTED'
             OROF 'RAW'
-            OROF 'TYPE'
+            OROF 'TYPE'      ! Not a Named Type for ELSE below
+
+            OF 'PROC'        ; Prot:RV:PROC='PROC'
             
             OF   'VIRTUAL'   
             OROF 'DERIVED'   
