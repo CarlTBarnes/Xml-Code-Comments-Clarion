@@ -18,6 +18,7 @@
 
 !-------------------------------------------------------------------------------
 ! History
+! 16-Oct-2024 New "Region" option put !Region !EndRegion around !!! <XML> Comments so can be collapsed
 ! 29-May-2022 Fix bugs with no parameters "PROCEDURE()", "PROCEDURE,ReturnType" and "PROCEDURE"
 !             Adjust Window to work with Manifest   
 ! 02-Jun-2022 Option to Number <Param > #. to help some with commas on omitted e.g. ST.Replace has 9 (ParamNumbered) 
@@ -65,6 +66,7 @@ xRemarksXtra     BYTE(0)            !  Xtra Lines
 OmitBang3        BYTE(0)  !No !!! just <Xml> so can validate ? Allow \\\ for C#
 AlignParmGT      BYTE(1)  !For <param align ">"
 UpperTypes       BYTE(0)
+RegionEndRegion  BYTE(0)  !10/16/24 add !Region / EndRegion around XML Comments
 DashLineBefore   BYTE(0)  !05/29/22 way to add !---- to generated
 ParamNumbered    BYTE(1)  !06/02/22 <param ...> 1. 2. 
             END 
@@ -107,11 +109,11 @@ Source      STRING(64)      !RetQ:Source
 IncFileTxt  STRING(32000)
 !EndRegion Data Declarations
         
-Window WINDOW('<<Xml> Code Comment Generate from Prototype for Clarion'),AT(,,430,210),GRAY,SYSTEM, |
+Window WINDOW('<<Xml> Code Comment Generate from Prototype for Clarion'),AT(,,430,230),GRAY,SYSTEM, |
             ICON('XmlComGn.ICO'),FONT('Segoe UI',9),RESIZE
         SHEET,AT(3,4),FULL,USE(?SHEET1)
             TAB(' &Input  '),USE(?Tab:Input)
-                PROMPT('&Prototype:'),AT(9,21),USE(?Prototype1)
+                PROMPT('&Prototype:'),AT(9,20),USE(?Prototype1)
                 PROMPT('ProcedureName  PROCEDURE(...parameters...),Return'),AT(46,21),USE(?Prototype2), |
                         FONT('Consolas')
                 BUTTON('Copy'),AT(293,19,27,10),USE(?CopyProtBtn),SKIP,FONT(,8),TIP('Copy Prototype ' & |
@@ -141,12 +143,13 @@ Window WINDOW('<<Xml> Code Comment Generate from Prototype for Clarion'),AT(,,43
                 CHECK('<<Parm> #.'),AT(246,79),USE(Cfg:ParamNumbered),TRN,TIP('<<Param> lines are Nu' & |
                         'mbered 1,2,3')
                 CHECK('Align ">"'),AT(296,79),USE(Cfg:AlignParmGT),TRN,TIP('Align closing ">" on Params')
-                CHECK('UPR Types'),AT(335,66),USE(Cfg:UpperTypes),TRN,TIP('Standard Clarion Types ar' & |
+                CHECK('UPR Types'),AT(340,66),USE(Cfg:UpperTypes),TRN,TIP('Standard Clarion Types ar' & |
                         'e UPPER<13,10,13,10>Check box to Upper ALL Types e.g. STRINGTHEORY<13,10>' & |
-                        '<13,10>Easier to read in Intellisense.<13><10>Requires Parsing again ')
-                CHECK('! -----'),AT(392,66),USE(Cfg:DashLineBefore),TRN,TIP('Dashed line before Summary')
-                CHECK('No !!!'),AT(392,79),USE(Cfg:OmitBang3),TRN,TIP('Omit !!! prefix so just XML i' & |
+                        '<13,10>Easier to read in Intellisense.<13><10>Requires Generate XML again ')
+                CHECK('No !!!'),AT(340,79),USE(Cfg:OmitBang3),TRN,TIP('Omit !!! prefix so just XML i' & |
                         's output')
+                CHECK('! Region'),AT(389,66),USE(Cfg:RegionEndRegion),TRN,TIP('!Region and !EndRegion lines to allow collapsing XML Comments')
+                CHECK('! -------'),AT(389,79),USE(Cfg:DashLineBefore),TRN,TIP('Dashed line before Summary')
                 TEXT,AT(9,94),FULL,USE(XmlComText),SKIP,HVSCROLL,FONT('Consolas',10)
             END
             TAB(' Par&ms List  '),USE(?Tab:Parms)
@@ -213,7 +216,10 @@ XmlGenElement       PROCEDURE(STRING ElementOpen, STRING ElementClose, BYTE pXtr
         
         CASE ACCEPTED() 
         OF ?PasteBtn ; ProtoCode=CLIPBOARD() ; POST(EVENT:Accepted,?XmlBtn)
-        OF ?TestBtn  ; IF TestProtoCode(ProtoCode) THEN CLEAR(ProtoGrp) ; CLEAR(XmlComText) ; DISPLAY ; SELECT(?XmlBtn). !06/03/22 POST(EVENT:Accepted,?XmlBtn).
+        OF ?TestBtn  ; IF TestProtoCode(ProtoCode) THEN 
+                          CLEAR(ProtoGrp) ; CLEAR(XmlComText) ; DISPLAY 
+                          POST(EVENT:Accepted,?XmlBtn) !10/16/24 was SELECT(?XmlBtn) but that's SKIP
+                       END
         OF ?ParseBtn ; DOO.ProtoParse() ; DISPLAY 
         OF ?XmlBtn   ; DOO.ProtoParse() ; DOO.XmlGenerate() ; DISPLAY 
         OF ?CopyBtn  ; SetCLIPBOARD(XmlComText)
@@ -300,7 +306,14 @@ Parm1Len    USHORT
         !---- <remarks>  </remarks> ----------------------------------- <remarks>
     IF Cfg:xRemarksChk THEN 
        DOO.XmlGenElement(xRemarks1,xRemarks2,Cfg:xRemarksXtra, CLIP(Prot:RV:Source) & ALL(' ',10))           
-    END 
+    END
+
+    IF Cfg:RegionEndRegion THEN  ! --- Wrap in !Region !EndRegion Lines --------------------------
+       XMLcc='!Region '& CLIP(Prot:Name) &'() help<13,10>' & |
+              XMLcc & |
+             '!EndRegion'
+    END    
+
     XmlComText=XMLcc
     RETURN
    
