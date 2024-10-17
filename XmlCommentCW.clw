@@ -125,12 +125,12 @@ Window WINDOW('<<Xml> Code Comment Generate from Prototype for Clarion'),AT(,,43
                 TEXT,AT(9,31,,30),FULL,USE(ProtoCode),VSCROLL,FONT('Consolas'),TIP('Prototype of Pro' & |
                         'cedure with (Parameters),RetunValue<13,10>Single line without continuation'), |
                         DROPID('~TEXT'),ALRT(CtrlQ)
-                BUTTON('Past&e'),AT(8,67,31,21),USE(?PasteBtn),SKIP,TIP('Paste clipboard into above ' & |
+                BUTTON('Past&e'),AT(8,67,28,21),USE(?PasteBtn),SKIP,TIP('Paste clipboard into above ' & |
                         'Procedure Prototype entry and Generate')
-                BUTTON('!!! &XML Generate'),AT(43,67,41,21),USE(?XmlBtn),SKIP,TIP('Parse Procedure a' & |
+                BUTTON('!!! &XML Generate'),AT(40,67,34,21),USE(?XmlBtn),SKIP,TIP('Parse Procedure a' & |
                         'bove and generate !!! XML comments')
-                BUTTON('&Copy<13,10>XML'),AT(88,67,38,21),USE(?CopyBtn),SKIP,TIP('Copy Generated XML' & |
-                        ' at bottom')
+                BUTTON('&Copy<0Dh,0Ah>XML'),AT(78,67,30,21),USE(?CopyBtn),SKIP,TIP('Copy Generated X' & |
+                        'ML at bottom')
                 CHECK('<<Summary>'),AT(152,66),USE(Cfg:xSummaryChk),TRN
                 SPIN(@n1),AT(207,66,25,10),USE(Cfg:xSummaryXtra),HVSCROLL,TIP('Summary Extra Lines'), |
                         RANGE(0,9)
@@ -146,9 +146,10 @@ Window WINDOW('<<Xml> Code Comment Generate from Prototype for Clarion'),AT(,,43
                 CHECK('UPR Types'),AT(340,66),USE(Cfg:UpperTypes),TRN,TIP('Standard Clarion Types ar' & |
                         'e UPPER<13,10,13,10>Check box to Upper ALL Types e.g. STRINGTHEORY<13,10>' & |
                         '<13,10>Easier to read in Intellisense.<13><10>Requires Generate XML again ')
-                CHECK('No !!!'),AT(340,79),USE(Cfg:OmitBang3),TRN,TIP('Omit !!! prefix so just XML i' & |
-                        's output')
-                CHECK('! Region'),AT(389,66),USE(Cfg:RegionEndRegion),TRN,TIP('!Region and !EndRegion lines to allow collapsing XML Comments')
+                CHECK('No !!!'),AT(113,74),USE(Cfg:OmitBang3),TRN,FONT(,8),TIP('Omit !!! prefix so j' & |
+                        'ust XML is output<13,10>Allows working with XML e.g. in an XML Validator')
+                CHECK('! Region'),AT(389,66),USE(Cfg:RegionEndRegion),TRN,TIP('!Region and !EndRegio' & |
+                        'n lines to allow collapsing XML Comments')
                 CHECK('! -------'),AT(389,79),USE(Cfg:DashLineBefore),TRN,TIP('Dashed line before Summary')
                 TEXT,AT(9,94),FULL,USE(XmlComText),SKIP,HVSCROLL,FONT('Consolas',10)
             END
@@ -225,6 +226,7 @@ XmlGenElement       PROCEDURE(STRING ElementOpen, STRING ElementClose, BYTE pXtr
         OF ?CopyBtn  ; SetCLIPBOARD(XmlComText)
         OF ?RunAgainBtn ; RUN(COMMAND('0'))
         OF ?CopyProtBtn ; SetCLIPBOARD(ProtoCode)
+        OF ?Cfg:OmitBang3   ; POST(EVENT:Accepted,?XmlBtn)
         END
     END
  
