@@ -18,6 +18,7 @@
 
 !-------------------------------------------------------------------------------
 ! History
+! 20-Oct-2024 OmitBang3 "Omit !!!" has STATE3(3) that wraps in Root Element '<Comments>' so XML Validators work
 ! 20-Oct-2024 Region now has 6 options e.g. "Region Proc ====" ==> !Region ProcName() Help =======
 ! 20-Oct-2024 Move Dash Line !---- before REGION (checks DashLineBefore & RegionEndRegion). Dash State3 is line of Equals
 ! 17-Oct-2024 xReturnsChk add STATE3 to CHECK which ALWAYS Generates <Returns>. Done for use in CLW where may not have RV.
@@ -66,7 +67,7 @@ xReturnsChk      BYTE(1)            !Do we want <Returns>   10/17/24 3=State3 =>
 xReturnsXtra     BYTE(0)            !  Xtra Lines
 xRemarksChk      BYTE(1)            !Do we want <Remarks>
 xRemarksXtra     BYTE(0)            !  Xtra Lines 
-OmitBang3        BYTE(0)  !No !!! just <Xml> so can validate ? Allow \\\ for C#
+OmitBang3        BYTE(0)  !No !!! just <Xml> so can validate ? Allow \\\ for C#     10/20/24 State3(3) adds Root <Comments>
 AlignParmGT      BYTE(1)  !For <param align ">"
 UpperTypes       BYTE(0)
 DashLineBefore   BYTE(0)  !05/29/22 way to add !---- to generated   !10/20/24 State3(3) is !=======
@@ -150,14 +151,15 @@ Window WINDOW('<<Xml> Code Comment Generate from Prototype for Clarion'),AT(,,43
                         'e UPPER<13,10,13,10>Check box to Upper ALL Types e.g. STRINGTHEORY<13,10>' & |
                         '<13,10>Easier to read in Intellisense.<13><10>Requires Generate XML again ')
                 CHECK('No !!!'),AT(113,74),USE(Cfg:OmitBang3),TRN,FONT(,8),TIP('Omit !!! prefix so j' & |
-                        'ust XML is output<13,10>Allows working with XML e.g. in an XML Validator')
+                        'ust XML is output<13,10>Allows working with XML e.g. in an XML Validator' & |
+                        '<13,10>State 3 adds Root Element'),STATE3('3')
                 CHECK('! -------'),AT(389,66),USE(Cfg:DashLineBefore),TRN,TIP('Dashed line before Su' & |
                         'mmary<13,10>State 3 is !===== equals'),STATE3('3')
                 TEXT,AT(9,94),FULL,USE(XmlComText),SKIP,HVSCROLL,FONT('Consolas',10)
                 LIST,AT(341,79,85,10),USE(Cfg:RegionEndRegion),VSCROLL,TIP('!Region and !EndRegion l' & |
-                        'ines to allow collapsing XML Comments'),DROP(9),FROM('No Region|#0|Region|#' & |
-                        '10|Region Procedure()|#21|Region Proc ------|#22|Region Proc ====|#23|Regio' & |
-                        'n ------------|#32|Region ========|#33')
+                        'ines to allow collapsing XML Comments'),DROP(9),FROM('No Region|#0|Region P' & |
+                        'rocedure()|#21|Region Proc ------|#22|Region Proc ====|#23|Region ---------' & |
+                        '---|#32|Region ========|#33|Region|#10')
             END
             TAB(' Par&ms List  '),USE(?Tab:Parms)
                 STRING('Parameters parsed from Prototype into a List for debug'),AT(8,21), |
@@ -233,7 +235,7 @@ XmlGenAddLine       PROCEDURE(STRING pLineContent, BOOL NoCrLf=False)
         OF ?CopyBtn  ; SetCLIPBOARD(XmlComText)
         OF ?RunAgainBtn ; RUN(COMMAND('0'))
         OF ?CopyProtBtn ; SetCLIPBOARD(ProtoCode)
-        OF ?Cfg:OmitBang3       ; POST(EVENT:Accepted,?XmlBtn) 
+        OF ?Cfg:OmitBang3       ; IF ProtoCode THEN POST(EVENT:Accepted,?XmlBtn).
         OF ?Cfg:DashLineBefore  ; ?{PROP:Text}=CHOOSE(Cfg:DashLineBefore<3,'! -------','! =====')
         END
     END
@@ -241,6 +243,8 @@ XmlGenAddLine       PROCEDURE(STRING pLineContent, BOOL NoCrLf=False)
     RETURN
 !--------------------------------------------------------
 DOO.XmlGenerate     PROCEDURE()
+xRoot1      EQUATE('<<Comments>')   !When Cfg:OmitBang3 = 3
+xRoot2      EQUATE('<</Comments>')
 xSummary1   EQUATE('<<summary>')        !!! <summary>xxx</summary>
 xSummary2   EQUATE('<</summary>')
 xRemarks1   EQUATE('<<remarks>')
@@ -285,6 +289,11 @@ RegionLine  PSTRING(96)
        DOO.XmlGenAddLine(RegionLine)
     END 
     
+    IF Cfg:OmitBang3 = 3 THEN
+       !Add the Prolog?  <?xml version="1.0" encoding="UTF-8"?>
+       DOO.XmlGenAddLine(xRoot1)   !10/20/24 State 3 wraps in XML Root Element <Comments></Comments> for validation
+    END
+
     !---- <summary>  </summary> --------------------------------------- <summary>
     IF Cfg:xSummaryChk THEN
        DOO.XmlGenElement(xSummary1,xSummary2,Cfg:xSummaryXtra, CLIP(Prot:Name) &'() {10}')
@@ -337,6 +346,10 @@ RegionLine  PSTRING(96)
        DOO.XmlGenElement(xRemarks1,xRemarks2,Cfg:xRemarksXtra, CLIP(Prot:RV:Source) & ALL(' ',10))           
     END
 
+    IF Cfg:OmitBang3 = 3 THEN 
+       DOO.XmlGenAddLine(xRoot2)      !10/20/24 End XML Root Element </Comments>
+    END
+    
     IF Cfg:RegionEndRegion THEN  ! --- Wrap in !Region !EndRegion Lines --------------------------
        DOO.XmlGenAddLine('!EndRegion ')
     END 
@@ -643,13 +656,14 @@ TestProtoCode PROCEDURE(*STRING OutProto)!,BOOL !Popup with Test Prototypes
                   '|SerializeQueue( *Q ) no return' & |
                   '|AddCount( Arrays[,] )' & |
                   '|PatternsQ2String( NamedType),*String' & |
-                  '')
+                  '|GETINI(STRING INIsection,...)')
         OutProto='ReplaceBetween PROCEDURE(string pLeft, <<string pRight>, string pOldValue, string pNewValue, long pCount=0, long pStart=1, long pEnd=0, long pNoCase=0, long pReplaceAll=false),Long,Proc,virtual'
         OutProto='FindBetween PROCEDURE(const *string pFindIn, string pLeft, string pRight, *long outStart, *long outEnd, bool pNoCase=false, long pExclusive=true),string'
         OutProto='LinesViewSplit PROCEDURE(StringTheory STwithLinesSplitDone, STRING SplitDelim, <<STRING QuoteStart>, <<STRING QuoteEnd>, BYTE RemoveQuotes=TRUE, |<13,10> {25} bool pClip=false, bool pLeft=false, <<STRING pSeparator>, long pNested=false)'
         OutProto='SerializeQueue PROCEDURE(*Queue pQueue,<<string pRecordBoundary>,*StringTheory pFieldBoundary,<<string pQuotestart>,<<string pQuoteEnd>,Long pLevel=1,Long pFree=true),virtual'
         OutProto='AddCount PROCEDURE(*LONG[,] Total,*LONG[,] Current)'
         OutProto='PatternsQ2String  PROCEDURE(PatternQType PatQ, *LONG OutLength),*STRING'
+        OutProto='GETINI(STRING INIsection, STRING entry, <STRING default>, <STRING fileName>),STRING,NAME(''Cla$GETINI'')'
     ELSE
         RETURN FALSE
     END 
