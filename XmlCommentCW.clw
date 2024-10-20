@@ -18,7 +18,8 @@
 
 !-------------------------------------------------------------------------------
 ! History
-! 20-Oct-2024 Move Dash Line !---- before REGION (checks DashLineBefore & RegionEndRegion)
+! 20-Oct-2024 Region now has 6 options e.g. "Region Proc ====" ==> !Region ProcName() Help =======
+! 20-Oct-2024 Move Dash Line !---- before REGION (checks DashLineBefore & RegionEndRegion). Dash State3 is line of Equals
 ! 17-Oct-2024 xReturnsChk add STATE3 to CHECK which ALWAYS Generates <Returns>. Done for use in CLW where may not have RV.
 ! 16-Oct-2024 New "Region" option put !Region !EndRegion around !!! <XML> Comments so can be collapsed
 ! 29-May-2022 Fix bugs with no parameters "PROCEDURE()", "PROCEDURE,ReturnType" and "PROCEDURE"
@@ -68,8 +69,8 @@ xRemarksXtra     BYTE(0)            !  Xtra Lines
 OmitBang3        BYTE(0)  !No !!! just <Xml> so can validate ? Allow \\\ for C#
 AlignParmGT      BYTE(1)  !For <param align ">"
 UpperTypes       BYTE(0)
-DashLineBefore   BYTE(0)  !05/29/22 way to add !---- to generated
-RegionEndRegion  BYTE(0)  !10/16/24 add !Region / EndRegion around XML Comments
+DashLineBefore   BYTE(0)  !05/29/22 way to add !---- to generated   !10/20/24 State3(3) is !=======
+RegionEndRegion  BYTE(0)  !10/20/24 has values 10 to 33 -- 10/16/24 add !Region / EndRegion around XML Comments
 ParamNumbered    BYTE(1)  !06/02/22 <param ...> 1. 2. 
             END 
 
@@ -150,10 +151,13 @@ Window WINDOW('<<Xml> Code Comment Generate from Prototype for Clarion'),AT(,,43
                         '<13,10>Easier to read in Intellisense.<13><10>Requires Generate XML again ')
                 CHECK('No !!!'),AT(113,74),USE(Cfg:OmitBang3),TRN,FONT(,8),TIP('Omit !!! prefix so j' & |
                         'ust XML is output<13,10>Allows working with XML e.g. in an XML Validator')
-                CHECK('! -------'),AT(389,66),USE(Cfg:DashLineBefore),TRN,TIP('Dashed line before Summary')
+                CHECK('! -------'),AT(389,66),USE(Cfg:DashLineBefore),TRN,TIP('Dashed line before Su' & |
+                        'mmary<13,10>State 3 is !===== equals'),STATE3('3')
                 TEXT,AT(9,94),FULL,USE(XmlComText),SKIP,HVSCROLL,FONT('Consolas',10)
-                CHECK('! Region'),AT(389,79),USE(Cfg:RegionEndRegion),TRN,TIP('!Region and !EndRegio' & |
-                        'n lines to allow collapsing XML Comments')
+                LIST,AT(341,79,85,10),USE(Cfg:RegionEndRegion),VSCROLL,TIP('!Region and !EndRegion l' & |
+                        'ines to allow collapsing XML Comments'),DROP(9),FROM('No Region|#0|Region|#' & |
+                        '10|Region Procedure()|#21|Region Proc ------|#22|Region Proc ====|#23|Regio' & |
+                        'n ------------|#32|Region ========|#33')
             END
             TAB(' Par&ms List  '),USE(?Tab:Parms)
                 STRING('Parameters parsed from Prototype into a List for debug'),AT(8,21), |
@@ -229,7 +233,8 @@ XmlGenAddLine       PROCEDURE(STRING pLineContent, BOOL NoCrLf=False)
         OF ?CopyBtn  ; SetCLIPBOARD(XmlComText)
         OF ?RunAgainBtn ; RUN(COMMAND('0'))
         OF ?CopyProtBtn ; SetCLIPBOARD(ProtoCode)
-        OF ?Cfg:OmitBang3   ; POST(EVENT:Accepted,?XmlBtn)
+        OF ?Cfg:OmitBang3       ; POST(EVENT:Accepted,?XmlBtn) 
+        OF ?Cfg:DashLineBefore  ; ?{PROP:Text}=CHOOSE(Cfg:DashLineBefore<3,'! -------','! =====')
         END
     END
  
@@ -251,6 +256,8 @@ Parm1       CSTRING(256)
 PadLabel    PSTRING(128)
 TypeLen     USHORT
 Parm1Len    USHORT
+RegionProc  PSTRING(48)
+RegionLine  PSTRING(96)
     CODE
     XMLcc='' 
     IF Prot:Parms[1:6] = 'Failed' THEN
@@ -259,12 +266,23 @@ Parm1Len    USHORT
     END    
     Bang3=CHOOSE(~Cfg:OmitBang3,'!!! ','')
 
-    IF Cfg:DashLineBefore THEN  ! --- Dashed Line -------------------------------------------------
-       XMLcc='! -{78}<13,10>'   !Must be !--- not !!!--- or it will generate into Intellisense without CRLF so messedup
-    END                         !Could do !!! <!-- ----- --> still in Intellisense but looks better 
+    CASE Cfg:DashLineBefore         ! --- Dashed Line -------------------------------------------------
+    OF 1 ; XMLcc='! -{78}<13,10>'   !Must be !--- not !!!--- or it will generate into Intellisense without CRLF so messedup
+    OF 3 ; XMLcc='! ={78}<13,10>'   !10/20/24 STATE3(3) is Equals !========
+    END                             !Could do !!! <!-- ----- --> still in Intellisense but looks better 
 
     IF Cfg:RegionEndRegion THEN  ! --- Wrap in !Region !EndRegion Lines --------------------------
-       DOO.XmlGenAddLine('!Region '& CLIP(Prot:Name) &'() help ')
+       RegionProc = CLIP(Prot:Name) &'() Help '
+       CASE Cfg:RegionEndRegion
+       OF 21 ; RegionLine='!Region '& RegionProc                ! Region Proc Name      |#21
+       OF 22 ; RegionLine='!Region '& RegionProc & ALL('-')     ! Region Proc ------    |#22
+       OF 23 ; RegionLine='!Region '& RegionProc & ALL('=')     ! Region Proc ====      |#23
+       OF 32 ; RegionLine='!Region '&              ALL('-')     ! Region ------------   |#32
+       OF 33 ; RegionLine='!Region '&              ALL('=')     ! Region ========       |#33
+       ELSE  ; RegionLine='!Region '                            ! Region                |#10
+       END
+       RegionLine = CLIP(SUB(RegionLine,1,80)) &' '
+       DOO.XmlGenAddLine(RegionLine)
     END 
     
     !---- <summary>  </summary> --------------------------------------- <summary>
