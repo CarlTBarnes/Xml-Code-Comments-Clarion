@@ -18,6 +18,7 @@
 
 !-------------------------------------------------------------------------------
 ! History
+! 17-Oct-2024 xReturnsChk add STATE3 to CHECK which ALWAYS Generates <Returns>. Done for use in CLW where may not have RV.
 ! 16-Oct-2024 New "Region" option put !Region !EndRegion around !!! <XML> Comments so can be collapsed
 ! 29-May-2022 Fix bugs with no parameters "PROCEDURE()", "PROCEDURE,ReturnType" and "PROCEDURE"
 !             Adjust Window to work with Manifest   
@@ -59,7 +60,7 @@ XmlComText  STRING(4000)
 ConfigGrp   GROUP,PRE(CFG) !TODO: Button to Save these to Registry or INI
 xSummaryChk      BYTE(1)            !Do we want <Summary>
 xSummaryXtra     BYTE(0)            !  Xtra Lines
-xReturnsChk      BYTE(1)            !Do we want <Returns>
+xReturnsChk      BYTE(1)            !Do we want <Returns>   10/17/24 3=State3 => Always even if no Return Prot:RV:Type
 xReturnsXtra     BYTE(0)            !  Xtra Lines
 xRemarksChk      BYTE(1)            !Do we want <Remarks>
 xRemarksXtra     BYTE(0)            !  Xtra Lines 
@@ -137,7 +138,7 @@ Window WINDOW('<<Xml> Code Comment Generate from Prototype for Clarion'),AT(,,43
                 CHECK('<<Remarks>'),AT(152,79),USE(Cfg:xRemarksChk),TRN
                 SPIN(@n1),AT(207,79,25,10),USE(Cfg:xRemarksXtra),HVSCROLL,TIP('Remarks Extra Lines'), |
                         RANGE(0,9)
-                CHECK('<<Returns>'),AT(246,66),USE(Cfg:xReturnsChk),TRN
+                CHECK('<<Returns>'),AT(246,66),USE(Cfg:xReturnsChk),TRN,STATE3('3')
                 SPIN(@n1),AT(296,66,25,10),USE(Cfg:xReturnsXtra),HVSCROLL,TIP('Returns Extra Lines'), |
                         RANGE(0,9)
                 CHECK('<<Parm> #.'),AT(246,79),USE(Cfg:ParamNumbered),TRN,TIP('<<Param> lines are Nu' & |
@@ -301,13 +302,11 @@ Parm1Len    USHORT
     END
 
     !---- <returns>  </returns> --------------------------------------- <returns>
-    IF Prot:RV:Type THEN
-       Parm1 = CLIP(Prot:RV:Type) &' '& |       !Note CString
-               CLIP(Prot:RV:PROC) & ALL(' ',10)
-       IF Cfg:xReturnsChk THEN
-          DOO.XmlGenElement(xReturns1,xReturns2,Cfg:xReturnsXtra, Parm1 )
-       END        
-    END
+    IF Cfg:xReturnsChk AND (Cfg:xReturnsChk=3 OR Prot:RV:Type) THEN     !10/17/24 State3 means always, else only if RV Type
+       Parm1 = CLIP(Prot:RV:Type) & |       !Note CString
+               CLIP(' '&Prot:RV:PROC) & ALL(' ',10)
+       DOO.XmlGenElement(xReturns1,xReturns2,Cfg:xReturnsXtra, Parm1 )
+    END    
     
         !---- <remarks>  </remarks> ----------------------------------- <remarks>
     IF Cfg:xRemarksChk THEN 
