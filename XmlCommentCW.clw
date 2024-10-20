@@ -18,6 +18,7 @@
 
 !-------------------------------------------------------------------------------
 ! History
+! 20-Oct-2024 Move Dash Line !---- before REGION (checks DashLineBefore & RegionEndRegion)
 ! 17-Oct-2024 xReturnsChk add STATE3 to CHECK which ALWAYS Generates <Returns>. Done for use in CLW where may not have RV.
 ! 16-Oct-2024 New "Region" option put !Region !EndRegion around !!! <XML> Comments so can be collapsed
 ! 29-May-2022 Fix bugs with no parameters "PROCEDURE()", "PROCEDURE,ReturnType" and "PROCEDURE"
@@ -67,8 +68,8 @@ xRemarksXtra     BYTE(0)            !  Xtra Lines
 OmitBang3        BYTE(0)  !No !!! just <Xml> so can validate ? Allow \\\ for C#
 AlignParmGT      BYTE(1)  !For <param align ">"
 UpperTypes       BYTE(0)
-RegionEndRegion  BYTE(0)  !10/16/24 add !Region / EndRegion around XML Comments
 DashLineBefore   BYTE(0)  !05/29/22 way to add !---- to generated
+RegionEndRegion  BYTE(0)  !10/16/24 add !Region / EndRegion around XML Comments
 ParamNumbered    BYTE(1)  !06/02/22 <param ...> 1. 2. 
             END 
 
@@ -149,10 +150,10 @@ Window WINDOW('<<Xml> Code Comment Generate from Prototype for Clarion'),AT(,,43
                         '<13,10>Easier to read in Intellisense.<13><10>Requires Generate XML again ')
                 CHECK('No !!!'),AT(113,74),USE(Cfg:OmitBang3),TRN,FONT(,8),TIP('Omit !!! prefix so j' & |
                         'ust XML is output<13,10>Allows working with XML e.g. in an XML Validator')
-                CHECK('! Region'),AT(389,66),USE(Cfg:RegionEndRegion),TRN,TIP('!Region and !EndRegio' & |
-                        'n lines to allow collapsing XML Comments')
-                CHECK('! -------'),AT(389,79),USE(Cfg:DashLineBefore),TRN,TIP('Dashed line before Summary')
+                CHECK('! -------'),AT(389,66),USE(Cfg:DashLineBefore),TRN,TIP('Dashed line before Summary')
                 TEXT,AT(9,94),FULL,USE(XmlComText),SKIP,HVSCROLL,FONT('Consolas',10)
+                CHECK('! Region'),AT(389,79),USE(Cfg:RegionEndRegion),TRN,TIP('!Region and !EndRegio' & |
+                        'n lines to allow collapsing XML Comments')
             END
             TAB(' Par&ms List  '),USE(?Tab:Parms)
                 STRING('Parameters parsed from Prototype into a List for debug'),AT(8,21), |
@@ -193,6 +194,7 @@ OneParmQParse       PROCEDURE()
 ReturnValueParse    PROCEDURE() 
 XmlGenerate         PROCEDURE()
 XmlGenElement       PROCEDURE(STRING ElementOpen, STRING ElementClose, BYTE pXtraLines, STRING pContent)
+XmlGenAddLine       PROCEDURE(STRING pLineContent, BOOL NoCrLf=False)
         END   
     CODE
     OPEN(Window)
@@ -261,6 +263,10 @@ Parm1Len    USHORT
        XMLcc='! -{78}<13,10>'   !Must be !--- not !!!--- or it will generate into Intellisense without CRLF so messedup
     END                         !Could do !!! <!-- ----- --> still in Intellisense but looks better 
 
+    IF Cfg:RegionEndRegion THEN  ! --- Wrap in !Region !EndRegion Lines --------------------------
+       DOO.XmlGenAddLine('!Region '& CLIP(Prot:Name) &'() help ')
+    END 
+    
     !---- <summary>  </summary> --------------------------------------- <summary>
     IF Cfg:xSummaryChk THEN
        DOO.XmlGenElement(xSummary1,xSummary2,Cfg:xSummaryXtra, CLIP(Prot:Name) &'() {10}')
@@ -314,10 +320,8 @@ Parm1Len    USHORT
     END
 
     IF Cfg:RegionEndRegion THEN  ! --- Wrap in !Region !EndRegion Lines --------------------------
-       XMLcc='!Region '& CLIP(Prot:Name) &'() help<13,10>' & |
-              XMLcc & |
-             '!EndRegion'
-    END    
+       DOO.XmlGenAddLine('!EndRegion ')
+    END 
 
     XmlComText=XMLcc
     RETURN
@@ -343,6 +347,15 @@ LNo USHORT
     END
     XMLcc=XMLcc & ElementClose & xCRLF 
     RETURN 
+!----------------------------------------------------
+DOO.XmlGenAddLine PROCEDURE(STRING pLineContent, BOOL NoCrLf=False)
+    CODE 
+    IF NoCrLf THEN 
+       XMLcc=XMLcc & pLineContent
+    ELSE
+       XMLcc=XMLcc & pLineContent & xCRLF
+    END
+    RETURN
 !---------------------------- 
 DOO.ProtoParse PROCEDURE()
 X       USHORT
