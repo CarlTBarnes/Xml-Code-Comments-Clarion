@@ -1,6 +1,6 @@
 !Clarion !!!! <XML> Code Comment Generator
 !by Carl Barnes (c) 2021 released under the MIT License on Github. Use at yourown risk.
-!Region How to Use -------------------------------------------------------------------------------
+!
 !1. Paste in a complete Prototype:  Label PROCEDURE(Type Name,...),ReturnType
 !2. Click XML Generate
 !
@@ -15,10 +15,9 @@
 !Example of this in https://github.com/CarlTBarnes/FindCleanCwIDE/blob/main/CbFindCleanCls.inc
   !!!<summary>Join Patterns in Queue with delimeter C3BFh</summary><Returns>*STRING to replace FindPatterns Value</Returns>
   !PatternsQ2String    PROCEDURE(PatternQType PatQ, *LONG OutLength),*STRING
-!EndRegion 
-!Region History -------------------------------------------------------------------------------
+
+!-------------------------------------------------------------------------------
 ! History
-! 21-Oct-2024 New Cfg:xAutoGenXML to automatically Generate XML with any Config change
 ! 20-Oct-2024 OmitBang3 "Omit !!!" has STATE3(3) that wraps in Root Element '<Comments>' so XML Validators work
 ! 20-Oct-2024 Region now has 6 options e.g. "Region Proc ====" ==> !Region ProcName() Help =======
 ! 20-Oct-2024 Move Dash Line !---- before REGION (checks DashLineBefore & RegionEndRegion). Dash State3 is line of Equals
@@ -33,7 +32,7 @@
 !             Window Cosmetic: Prototype Text is now FULL and MinWidth=Width at Open
 ! 03-Jun-2022 Window reformat to move debug fields off first tab
 ! 03-Jun-2022 Spot By *Address and adjust alignment. Move CONST after Label
-!EndRegion -------------------------------------------------------------------------------
+!-------------------------------------------------------------------------------
 
   PROGRAM
     INCLUDE('KeyCodes.CLW')
@@ -62,21 +61,19 @@ ProtoCode   STRING(1000)
 XmlComText  STRING(4000)  
 
 ConfigGrp   GROUP,PRE(CFG) !TODO: Button to Save these to Registry or INI
-xAutoGenXML      BYTE(1)            !10/21/24 CB check so no need to keep clicking XML Check
 xSummaryChk      BYTE(1)            !Do we want <Summary>
 xSummaryXtra     BYTE(0)            !  Xtra Lines
 xReturnsChk      BYTE(1)            !Do we want <Returns>   10/17/24 3=State3 => Always even if no Return Prot:RV:Type
 xReturnsXtra     BYTE(0)            !  Xtra Lines
 xRemarksChk      BYTE(1)            !Do we want <Remarks>
 xRemarksXtra     BYTE(0)            !  Xtra Lines 
+OmitBang3        BYTE(0)  !No !!! just <Xml> so can validate ? Allow \\\ for C#     10/20/24 State3(3) adds Root <Comments>
 AlignParmGT      BYTE(1)  !For <param align ">"
 UpperTypes       BYTE(0)
 DashLineBefore   BYTE(0)  !05/29/22 way to add !---- to generated   !10/20/24 State3(3) is !=======
 RegionEndRegion  BYTE(0)  !10/20/24 has values 10 to 33 -- 10/16/24 add !Region / EndRegion around XML Comments
 ParamNumbered    BYTE(1)  !06/02/22 <param ...> 1. 2. 
-OmitBang3        BYTE(0)  !No !!! just <Xml> so can validate ? Allow \\\ for C#     10/20/24 State3(3) adds Root <Comments>
             END 
-GenXML_LastConfig LIKE(ConfigGrp)     !To know Config actually changed then AutoGenXML can Refresh
 
 XMLcc     ANY
 xCRLF     EQUATE('<13,10>') 
@@ -138,8 +135,6 @@ Window WINDOW('<<Xml> Code Comment Generate from Prototype for Clarion'),AT(,,43
                         'bove and generate !!! XML comments')
                 BUTTON('&Copy<0Dh,0Ah>XML'),AT(78,67,30,21),USE(?CopyBtn),SKIP,TIP('Copy Generated X' & |
                         'ML at bottom')
-                CHECK('Auto'),AT(113,67),USE(Cfg:xAutoGenXML),SKIP,TRN,FONT(,8),TIP('Automatically G' & |
-                        'enerate XML after any change of parameters')
                 CHECK('<<Summary>'),AT(152,66),USE(Cfg:xSummaryChk),TRN
                 SPIN(@n1),AT(207,66,25,10),USE(Cfg:xSummaryXtra),HVSCROLL,TIP('Summary Extra Lines'), |
                         RANGE(0,9)
@@ -155,16 +150,16 @@ Window WINDOW('<<Xml> Code Comment Generate from Prototype for Clarion'),AT(,,43
                 CHECK('UPR Types'),AT(340,66),USE(Cfg:UpperTypes),TRN,TIP('Standard Clarion Types ar' & |
                         'e UPPER<13,10,13,10>Check box to Upper ALL Types e.g. STRINGTHEORY<13,10>' & |
                         '<13,10>Easier to read in Intellisense.<13><10>Requires Generate XML again ')
+                CHECK('No !!!'),AT(113,74),USE(Cfg:OmitBang3),TRN,FONT(,8),TIP('Omit !!! prefix so j' & |
+                        'ust XML is output<13,10>Allows working with XML e.g. in an XML Validator' & |
+                        '<13,10>State 3 adds Root Element'),STATE3('3')
                 CHECK('! -------'),AT(389,66),USE(Cfg:DashLineBefore),TRN,TIP('Dashed line before Su' & |
                         'mmary<13,10>State 3 is !===== equals'),STATE3('3')
+                TEXT,AT(9,94),FULL,USE(XmlComText),SKIP,HVSCROLL,FONT('Consolas',10)
                 LIST,AT(341,79,85,10),USE(Cfg:RegionEndRegion),VSCROLL,TIP('!Region and !EndRegion l' & |
                         'ines to allow collapsing XML Comments'),DROP(9),FROM('No Region|#0|Region P' & |
                         'rocedure()|#21|Region Proc ------|#22|Region Proc ====|#23|Region ---------' & |
                         '---|#32|Region ========|#33|Region|#10')
-                CHECK('No !!!'),AT(113,79),USE(Cfg:OmitBang3),SKIP,TRN,FONT(,8),TIP('Omit !!! prefix' & |
-                        ' so just XML is output<13,10>Allows working with XML e.g. in an XML Validat' & |
-                        'or<13,10>State 3 adds Root Element'),STATE3('3')
-                TEXT,AT(9,94),FULL,USE(XmlComText),SKIP,HVSCROLL,FONT('Consolas',10)
             END
             TAB(' Par&ms List  '),USE(?Tab:Parms)
                 STRING('Parameters parsed from Prototype into a List for debug'),AT(8,21), |
@@ -235,23 +230,16 @@ XmlGenAddLine       PROCEDURE(STRING pLineContent, BOOL NoCrLf=False)
                           CLEAR(ProtoGrp) ; CLEAR(XmlComText) ; DISPLAY 
                           POST(EVENT:Accepted,?XmlBtn) !10/16/24 was SELECT(?XmlBtn) but that's SKIP
                        END
-        OF ?ParseBtn    ; DOO.ProtoParse() ; DISPLAY 
-        OF ?XmlBtn      ; DOO.ProtoParse() ; DOO.XmlGenerate() ; DISPLAY 
-        OF ?CopyBtn     ; SetCLIPBOARD(XmlComText)
+        OF ?ParseBtn ; DOO.ProtoParse() ; DISPLAY 
+        OF ?XmlBtn   ; DOO.ProtoParse() ; DOO.XmlGenerate() ; DISPLAY 
+        OF ?CopyBtn  ; SetCLIPBOARD(XmlComText)
         OF ?RunAgainBtn ; RUN(COMMAND('0'))
         OF ?CopyProtBtn ; SetCLIPBOARD(ProtoCode)
+        OF ?Cfg:OmitBang3       ; IF ProtoCode THEN POST(EVENT:Accepted,?XmlBtn).
         OF ?Cfg:DashLineBefore  ; ?{PROP:Text}=CHOOSE(Cfg:DashLineBefore<3,'! -------','! =====')
         END
-
-        IF CFG:xAutoGenXML                                    |     !10/21/24 new Auto Gen XML
-        AND INRANGE(FIELD(),?CFG:xAutoGenXML,?CFG:OmitBang3)  |
-        AND INLIST(EVENT(),EVENT:Accepted,EVENT:NewSelection) |     !Spins throwes New Select
-        AND ConfigGrp <> GenXML_LastConfig                    |        
-        AND ProtoCode                                         |
-          THEN
-               POST(EVENT:Accepted,?XmlBtn)
-        END 
-    END 
+    END
+ 
     RETURN
 !--------------------------------------------------------
 DOO.XmlGenerate     PROCEDURE()
@@ -275,7 +263,6 @@ Parm1Len    USHORT
 RegionProc  PSTRING(48)
 RegionLine  PSTRING(96)
     CODE
-    GenXML_LastConfig = ConfigGrp
     XMLcc='' 
     IF Prot:Parms[1:6] = 'Failed' THEN
        XmlComText = Prot:Parms
