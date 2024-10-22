@@ -18,6 +18,7 @@
 !EndRegion 
 !Region History -------------------------------------------------------------------------------
 ! History
+! 22-Oct-2024 Run Another button renamed ReRun. Changed to START() new Thread and pass Current Config. Add HALT button to close all Threads.
 ! 21-Oct-2024 New Cfg:xAutoGenXML to automatically Generate XML with any Config change
 ! 20-Oct-2024 OmitBang3 "Omit !!!" has STATE3(3) that wraps in Root Element '<Comments>' so XML Validators work
 ! 20-Oct-2024 Region now has 6 options e.g. "Region Proc ====" ==> !Region ProcName() Help =======
@@ -45,7 +46,7 @@ WndPrvCls CBWndPreviewClass
              !***
     
   MAP
-XmlCommentCW        PROCEDURE() 
+XmlCommentCW        PROCEDURE(STRING StartConfigGrp, STRING StartReRunGrp) 
 ClarionDataType     PROCEDURE(STRING InType,<*STRING OutEntity_PlusBug>,<*PSTRING OutEntity_BugOnly>),BYTE  !returns 1=ClaType 2=Entity *implied 0=Not CLA
 ClarionNamedType    PROCEDURE(*STRING InOutType, BYTE pUpper)  !Upper 1st Letter of Named Type
 ParseString2Queue   PROCEDURE(CONST *STRING pString, STRING cDelim1, QUEUE OutQueue, *STRING QueString, BYTE SkipBlanks=1),LONG,PROC
@@ -53,10 +54,10 @@ TestProtoCode       PROCEDURE(*STRING OutProto),BOOL,PROC !Popup with Test Proto
   END
 
   CODE
-  XmlCommentCW()
+  XmlCommentCW(' ',' ')
   RETURN 
 !========================================================================================
-XmlCommentCW PROCEDURE()
+XmlCommentCW PROCEDURE(STRING StartConfigGrp, STRING StartReRunGrp)
 !Region Data Declarations
 ProtoCode   STRING(1000)
 XmlComText  STRING(4000)  
@@ -114,6 +115,14 @@ NameU       STRING(12)      !RetQ:NameU     Before Paren
 Source      STRING(64)      !RetQ:Source
         END 
 IncFileTxt  STRING(32000)
+
+ReRunGrp   GROUP,PRE(ReRn) 
+WinX            LONG    !ReRn:WinX
+WinY            LONG    !ReRn:WinY
+WinW            LONG    !ReRn:WinW
+WinH            LONG    !ReRn:WinH
+            END
+Ndx         LONG
 !EndRegion Data Declarations
         
 Window WINDOW('<<Xml> Code Comment Generate from Prototype for Clarion'),AT(,,430,230),GRAY,SYSTEM, |
@@ -196,7 +205,8 @@ Window WINDOW('<<Xml> Code Comment Generate from Prototype for Clarion'),AT(,,43
                 TEXT,AT(9,33),FULL,USE(IncFileTxt),HVSCROLL,FONT('Consolas',10)
             END
         END
-        BUTTON('Run Another'),AT(376,3,50,10),USE(?RunAgainBtn),SKIP,FONT(,8),TIP('Run another instance')
+        BUTTON('ReRun'),AT(395,3,31,10),USE(?ReRunBtn),SKIP,FONT(,8),TIP('Run another instance thread')
+        BUTTON('Halt'),AT(369,3,22,10),USE(?HaltBtn),SKIP,FONT(,8),HIDE,TIP('Halt all threads')
     END
 
 DOO     CLASS
@@ -216,6 +226,13 @@ XmlGenAddLine       PROCEDURE(STRING pLineContent, BOOL NoCrLf=False)
     SYSTEM{PROP:PropVScroll}=1  
     SYSTEM{PROP:MsgModeDefault}=MSGMODE:CANCOPY
     0{PROP:MinWidth} = 0{PROP:Width} * 1 ; 0{PROP:MinHeight} = 0{PROP:Height} * .70
+    IF THREAD()>1 THEN UNHIDE(?HaltBtn).
+    IF StartConfigGrp <> '' THEN ConfigGrp = StartConfigGrp.    !ReRun passes Config in START()
+    IF StartReRunGrp <> ''  THEN
+       ReRunGrp  = StartReRunGrp
+       SETPOSITION(0,ReRn:WinX+20,ReRn:WinY+20,ReRn:WinW,ReRn:WinH)
+    END
+                       
     COMPILE('!***',_CbWndPreview_)
         WndPrvCls.Init(2)           !Add Carl's Window Preview Class to allow runtime window design
              !***
@@ -238,9 +255,14 @@ XmlGenAddLine       PROCEDURE(STRING pLineContent, BOOL NoCrLf=False)
         OF ?ParseBtn    ; DOO.ProtoParse() ; DISPLAY 
         OF ?XmlBtn      ; DOO.ProtoParse() ; DOO.XmlGenerate() ; DISPLAY 
         OF ?CopyBtn     ; SetCLIPBOARD(XmlComText)
-        OF ?RunAgainBtn ; RUN(COMMAND('0'))
         OF ?CopyProtBtn ; SetCLIPBOARD(ProtoCode)
         OF ?Cfg:DashLineBefore  ; ?{PROP:Text}=CHOOSE(Cfg:DashLineBefore<3,'! -------','! =====')
+
+        OF ?ReRunBtn    ; GETPOSITION(0,ReRn:WinX,ReRn:WinY,ReRn:WinW,ReRn:WinH)
+                          START(XmlCommentCW, , ConfigGrp, ReRunGrp)
+                          UNHIDE(?HaltBtn)
+        OF ?HaltBtn     ; IF 1=Message('Terminate XML Comment Tool? {20}',0{PROP:Text},ICON:Hand,'Keep Open|Halt Tool') THEN CYCLE.
+                          LOOP Ndx=1 TO 64 ; POST(EVENT:CloseWindow,,Ndx,1) ; END        
         END
 
         IF CFG:xAutoGenXML                                    |     !10/21/24 new Auto Gen XML
@@ -431,6 +453,10 @@ B1      USHORT
         ProtoCode[O] = ProtoCode[X] ; ProtoCode[X]=''
     END
     ProtoCode = LEFT(ProtoCode)                 !No Leading Spaces, likely pasted from MAP using old syntax e.g. BuiltIns.clw 
+    IF ~ProtoCode THEN
+        Prot:Parms = 'Failed: Prototype is Blank' 
+        RETURN 
+    END
     Prot:Parms = 'Failed: ProtoParse ?'
     Source = ProtoCode
     P1=INSTRING('(',Source)                     !Find "(" in  "Name PROCEDURE()"
