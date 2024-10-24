@@ -18,6 +18,7 @@
 !EndRegion 
 !Region History -------------------------------------------------------------------------------
 ! History
+! 24-Oct-2024 In XML the XtraLines put the Content on the Last line. Changed to First line or first extra in XmlGenElement()
 ! 22-Oct-2024 Run Another button renamed ReRun. Changed to START() new Thread and pass Current Config. Add HALT button to close all Threads.
 ! 21-Oct-2024 New Cfg:xAutoGenXML to automatically Generate XML with any Config change
 ! 20-Oct-2024 OmitBang3 "Omit !!!" has STATE3(3) that wraps in Root Element '<Comments>' so XML Validators work
@@ -404,12 +405,12 @@ RegionLine  PSTRING(96)
 !----------------------------------------------------
 DOO.XmlGenElement PROCEDURE(STRING ElementOpen, STRING ElementClose, BYTE pXtraLines, STRING pContent)
 LNo USHORT
-    CODE 
-    XMLcc=XMLcc & Bang3 & ElementOpen & CHOOSE(pXtraLines>1,'',pContent)
+    CODE
+    XMLcc=XMLcc & Bang3 & ElementOpen & |
+                                         CHOOSE(pXtraLines<2, pContent,'')  !If <Tag> CONTENT </Tag> on 1 line
     LOOP LNo=1 TO pXtraLines
-        XMLcc=XMLcc & xCRLF & Bang3 & |  
-                CHOOSE(LNo<>2,'',pContent) & |
-                CHOOSE(LNo < 2 OR LNo >= pXtraLines,'','<para>  </para>')  
+        XMLcc=XMLcc & xCRLF & Bang3   & |
+                              CHOOSE(LNo=1 AND pXtraLines>=2, pContent,'')  !If <Tag> CrLf CONTENT CrLf </Tag> on 3+ lines
     END
     XMLcc=XMLcc & ElementClose & xCRLF 
     RETURN 
