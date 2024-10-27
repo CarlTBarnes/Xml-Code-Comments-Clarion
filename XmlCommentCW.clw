@@ -170,7 +170,7 @@ Window WINDOW('<<Xml> Code Comment Generate from Prototype for Clarion'),AT(,,43
                 LIST,AT(341,79,85,10),USE(Cfg:RegionEndRegion),VSCROLL,TIP('!Region and !EndRegion l' & |
                         'ines to allow collapsing XML Comments'),DROP(9),FROM('No Region|#0|Region P' & |
                         'rocedure()|#21|Region Proc ------|#22|Region Proc ====|#23|Region ---------' & |
-                        '---|#32|Region ========|#33|Region|#10')
+                        '---|#32|Region ========|#33|Region|#10'),FORMAT('20L(2)~Region Type~C(0)')
                 CHECK('No !!!'),AT(113,79),USE(Cfg:OmitBang3),SKIP,TRN,FONT(,8),TIP('Omit !!! prefix' & |
                         ' so just XML is output<13,10>Allows working with XML e.g. in an XML Validat' & |
                         'or<13,10>State 3 adds Root Element'),STATE3('3')
@@ -219,6 +219,7 @@ XmlGenElement       PROCEDURE(STRING ElementOpen, STRING ElementClose, BYTE pXtr
 XmlGenAddLine       PROCEDURE(STRING pLineContent, BOOL NoCrLf=False)
         END   
     CODE
+    SYSTEM{PROP:PropVScroll}=1      !Proportional Thumb on LIST Scroll
     OPEN(Window)
     ?SHEET1{PROP:TabSheetStyle}=2  
     ?SHEET1{PROP:NoTheme}=1         !Incase Manifest adds Visual Stylesmakes sheet look better
