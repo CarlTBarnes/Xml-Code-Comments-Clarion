@@ -156,24 +156,27 @@ Window WINDOW('<<Xml> Code Comment Generate from Prototype for Clarion'),AT(,,43
                 CHECK('<<Remarks>'),AT(152,79),USE(Cfg:xRemarksChk),TRN
                 SPIN(@n1),AT(207,79,25,10),USE(Cfg:xRemarksXtra),HVSCROLL,TIP('Remarks Extra Lines'), |
                         RANGE(0,9)
-                CHECK('<<Returns>'),AT(246,66),USE(Cfg:xReturnsChk),TRN,STATE3('3')
+                CHECK('<<Returns>'),AT(246,66),USE(Cfg:xReturnsChk),TRN,TIP('Generate <<Return> if t' & |
+                        'here is a Return Type<13,10>State 3 always generates <<Return> line'),STATE3('3')
                 SPIN(@n1),AT(296,66,25,10),USE(Cfg:xReturnsXtra),HVSCROLL,TIP('Returns Extra Lines'), |
                         RANGE(0,9)
-                CHECK('<<Parm> #.'),AT(246,79),USE(Cfg:ParamNumbered),TRN,TIP('<<Param> lines are Nu' & |
-                        'mbered 1,2,3')
+                CHECK('<<Parm> #'),AT(246,79),USE(Cfg:ParamNumbered),TRN,TIP('<<Param> lines are Num' & |
+                        'bered 1,2,3')
                 CHECK('Align ">"'),AT(296,79),USE(Cfg:AlignParmGT),TRN,TIP('Align closing ">" on Params')
                 CHECK('UPR Types'),AT(340,66),USE(Cfg:UpperTypes),TRN,TIP('Standard Clarion Types ar' & |
-                        'e UPPER<13,10,13,10>Check box to Upper ALL Types e.g. STRINGTHEORY<13,10>' & |
-                        '<13,10>Easier to read in Intellisense.<13><10>Requires Generate XML again ')
+                        'e UPPER<13,10>Check box to Upper ALL Types e.g. STRINGTHEORY<13,10>Easier t' & |
+                        'o read in Intellisense')
                 CHECK('! -------'),AT(389,66),USE(Cfg:DashLineBefore),TRN,TIP('Dashed line before Su' & |
-                        'mmary<13,10>State 3 is !===== equals'),STATE3('3')
-                LIST,AT(341,79,85,10),USE(Cfg:RegionEndRegion),VSCROLL,TIP('!Region and !EndRegion l' & |
-                        'ines to allow collapsing XML Comments'),DROP(9),FROM('No Region|#0|Region P' & |
-                        'rocedure()|#21|Region Proc ------|#22|Region Proc ====|#23|Region ---------' & |
-                        '---|#32|Region ========|#33|Region|#10'),FORMAT('20L(2)~Region Type~C(0)')
+                        'mmary<13,10>State 3 is !===== Equals character'),STATE3('3')
+                LIST,AT(341,79,85,10),USE(Cfg:RegionEndRegion),VSCROLL,TIP('Wrap comments in !REGION' & |
+                        ' and !EndREGION lines <13,10>to allow folding XML Comments<13,10,13,10>The ' & |
+                        'folded Region shows one line which can be <13,10>the Procedure Name and/or ' & |
+                        '------ or ===== '),DROP(9),FROM('No Region|#0|Region Procedure()|#21|Region' & |
+                        ' Proc ------|#22|Region Proc ====|#23|Region ------------|#32|Region ======' & |
+                        '==|#33|Region|#10'),FORMAT('20L(2)~Region Type~C(0)')
                 CHECK('No !!!'),AT(113,79),USE(Cfg:OmitBang3),SKIP,TRN,FONT(,8),TIP('Omit !!! prefix' & |
                         ' so just XML is output<13,10>Allows working with XML e.g. in an XML Validat' & |
-                        'or<13,10>State 3 adds Root Element'),STATE3('3')
+                        'or<13,10>State 3 adds Root Element needed to be valid XML'),STATE3('3')
                 TEXT,AT(9,94),FULL,USE(XmlComText),SKIP,HVSCROLL,FONT('Consolas',10)
             END
             TAB(' Par&ms List  '),USE(?Tab:Parms)
