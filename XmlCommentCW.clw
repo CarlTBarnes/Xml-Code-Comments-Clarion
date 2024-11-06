@@ -74,7 +74,7 @@ xRemarksXtra     BYTE(0)            !  Xtra Lines
 AlignParmGT      BYTE(1)  !For <param align ">"
 UpperTypes       BYTE(0)
 DashLineBefore   BYTE(0)  !05/29/22 way to add !---- to generated   !10/20/24 State3(3) is !=======
-RegionEndRegion  BYTE(0)  !10/20/24 has values 10 to 33 -- 10/16/24 add !Region / EndRegion around XML Comments
+RegionEndRegion  BYTE(23) !Add !Region / !EndRegion around XML: 0=No Region, 10=Region, 21=Region Procedure(), 22=Proc()----, 23=Proc()====, 32=------, 33= ======
 ParamNumbered    BYTE(1)  !06/02/22 <param ...> 1. 2. 
 OmitBang3        BYTE(0)  !No !!! just <Xml> so can validate ? Allow \\\ for C#     10/20/24 State3(3) adds Root <Comments>
             END 
@@ -172,7 +172,7 @@ Window WINDOW('<<Xml> Code Comment Generate from Prototype for Clarion'),AT(,,43
                         ' and !EndREGION lines <13,10>to allow folding XML Comments<13,10,13,10>The ' & |
                         'folded Region shows one line which can be <13,10>the Procedure Name and/or ' & |
                         '------ or ===== '),DROP(9),FROM('No Region|#0|Region Procedure()|#21|Region' & |
-                        ' Proc ------|#22|Region Proc ====|#23|Region ------------|#32|Region ======' & |
+                        ' Procedure ------|#22|Region Procedure ====|#23|Region ------------|#32|Region ======' & |
                         '==|#33|Region|#10'),FORMAT('20L(2)~Region Type~C(0)')
                 CHECK('No !!!'),AT(113,79),USE(Cfg:OmitBang3),SKIP,TRN,FONT(,8),TIP('Omit !!! prefix' & |
                         ' so just XML is output<13,10>Allows working with XML e.g. in an XML Validat' & |
@@ -636,7 +636,21 @@ X   USHORT
         PUT(ReturnQ)
     END 
     RETURN
-!=================================================================
+
+!Region ClarionDataType() Help =================================================
+!!! <summary> Takes a Procedure Parameter Type (e.g. LONG) and decides if its a 
+!!!           Base Clarion Type, or Entity Type, or not a Type
+!!! </summary>
+!!! <param name="InType"           > 1. STRING Parameter Type to check e.g. LONG or QUEUE </param>
+!!! <param name="OutEntity_PlusBug"> 2. *STRING Optional returns Entity Type with *Asterisk prefixed (e.g. *QUEUE)</param>
+!!! <param name="OutEntity_BugOnly"> 3. *PSTRING Optional returns '*' Asterisk if Entity Type </param>
+!!! <returns> BYTE
+!!!  1=Clarion Base Type (BYTE,SHORT,LONG,STRING,GROUP);
+!!!  2=Entity Type (QUEUE,FILE,WINDOW,REPORT);
+!!!  0=Not Clarion Base or Entity Type
+!!! </returns>
+!!! <remarks> See Clarion Help for "Prototype Parameter Lists"</remarks>
+!EndRegion
 ClarionDataType PROCEDURE(STRING InType,<*STRING OutEntity_PlusBug>,<*PSTRING OutEntity_BugOnly>)!,BYTE returns 1=ClaType 2=Entity *implied 0=NotCla
 RetType BYTE
     CODE
@@ -659,7 +673,13 @@ RetType BYTE
     END
   !  stop('RetType=' & RetType & '  "' & InType &'"')
     RETURN RetType 
-!================================================================= 
+
+!Region ClarionNamedType() Help ================================================ 
+!!! <summary>ClarionNamedType() takes a Type and applies Upper case setting</summary>
+!!! <param name="InOutType"> *STRING InOutType pass in Type which is chnaged i.e. Out Param </param>
+!!! <param name="pUpper"   > BYTE pUpper pass 1 to Upper Case the Type </param>
+!!! <remarks>Called for Non-Clarion types to apply consistent case</remarks>
+!EndRegion 
 ClarionNamedType PROCEDURE(*STRING InOutType, BYTE pUpper)  !Upper 1st Letter of Named Type
 Let1 BYTE
     CODE    
